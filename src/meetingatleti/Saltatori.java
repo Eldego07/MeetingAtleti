@@ -1,4 +1,4 @@
-
+package meetingatleti;
 import java.io.*;
 import java.util.*;
 
@@ -16,7 +16,7 @@ public class Saltatori extends Atleta {
     /**
      * 
      */
-    private Integer distanzaSalto;
+    private Integer distanzaSalto=null;
 
     /**
      * @return

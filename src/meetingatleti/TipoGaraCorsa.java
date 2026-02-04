@@ -1,17 +1,17 @@
-
+package meetingatleti;
 /**
  * 
  */
 public enum TipoGaraCorsa {
-    100m,
-    200m,
-    400m,
-    800m,
-    1500m,
-    5000m,
-    10000m,
+    centom,
+    duecentom,
+    quattrocentom,
+    ottocentom,
+    millecinquecentom,
+    cinquemilam,
+    diecimilam,
     Ostacoli,
-    400 Ostacoli,
-    3000 Siepi,
+    quattrocentoOstacoli,
+    tremilaSiepi,
     Maradona
 }

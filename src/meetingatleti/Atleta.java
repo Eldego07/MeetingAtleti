@@ -1,11 +1,11 @@
-
+package meetingatleti;
 import java.io.*;
 import java.util.*;
 
 /**
  * 
  */
-public class Atleta {
+abstract class Atleta {
 
     /**
      * Default constructor
@@ -37,18 +37,5 @@ public class Atleta {
         return null;
     }
 
-    /**
-     * 
-     */
-    public Atleta() {
-        // TODO implement here
-    }
-
-    /**
-     * 
-     */
-    public void G&S() {
-        // TODO implement here
-    }
 
 }
