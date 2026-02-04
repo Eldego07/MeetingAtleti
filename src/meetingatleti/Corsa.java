@@ -1,13 +1,17 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package meetingatleti;
+
+import java.io.*;
+import java.util.*;
 
 /**
- *
- * @author CASOLARO.DIEGO
+ * 
  */
-public class Corsa {
-    
+public class Corsa extends Gara {
+
+    /**
+     * Default constructor
+     */
+    public Corsa() {
+    }
+
+
 }

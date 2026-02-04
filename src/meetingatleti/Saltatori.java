@@ -5,35 +5,23 @@ import java.util.*;
 /**
  * 
  */
-public class Gara {
+public class Saltatori extends Atleta {
 
     /**
      * Default constructor
      */
-    public Gara() {
+    public Saltatori() {
     }
 
     /**
      * 
      */
-    protected ArrayList<Atleta> atleti;
-
-    /**
-     * 
-     */
-    protected ArrayList<Atleta> atletiClassifica;
-
-
-
-
-
-
-
+    private Integer distanzaSalto;
 
     /**
      * @return
      */
-    public void iscrizione() {
+    public Integer calcolaPunteggio() {
         // TODO implement here
         return null;
     }

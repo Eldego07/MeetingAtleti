@@ -5,12 +5,12 @@ import java.util.*;
 /**
  * 
  */
-public interface Femminile {
+public interface Ostacolista {
 
     /**
      * 
      */
-    public ArrayList<Atleta> AtletiF;
+    public Integer tempoOstacolo;
 
 
 }

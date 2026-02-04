@@ -1,13 +1,54 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package meetingatleti;
+
+import java.io.*;
+import java.util.*;
 
 /**
- *
- * @author CASOLARO.DIEGO
+ * 
  */
-abstract class Atleta {
-    
+public class Atleta {
+
+    /**
+     * Default constructor
+     */
+    public Atleta() {
+    }
+
+    /**
+     * 
+     */
+    protected String nome;
+
+    /**
+     * 
+     */
+    protected String sesso;
+
+    /**
+     * 
+     */
+    protected Integer età;
+
+
+    /**
+     * @return
+     */
+    public Integer calcolaPunteggio() {
+        // TODO implement here
+        return null;
+    }
+
+    /**
+     * 
+     */
+    public Atleta() {
+        // TODO implement here
+    }
+
+    /**
+     * 
+     */
+    public void G&S() {
+        // TODO implement here
+    }
+
 }
