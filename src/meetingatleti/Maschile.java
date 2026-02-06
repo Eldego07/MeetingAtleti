@@ -9,8 +9,9 @@ public interface Maschile {
 
     /**
      * 
+     * @return 
      */
-    public ArrayList<Atleta> AtletiM=new ArrayList<>();
-
+    public ArrayList<Atleta> AtletiM();
+    
 
 }

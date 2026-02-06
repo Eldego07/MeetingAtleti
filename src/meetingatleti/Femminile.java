@@ -9,8 +9,12 @@ public interface Femminile {
 
     /**
      * 
+     * @return 
      */
-    public ArrayList<Atleta> AtletiF=new ArrayList<>();
+    public ArrayList<Atleta> AtletiF();
+     
+
+    
 
 
 }
