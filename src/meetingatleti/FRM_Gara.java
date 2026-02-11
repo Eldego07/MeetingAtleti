@@ -31,6 +31,11 @@ public class FRM_Gara extends javax.swing.JFrame {
         CMB_TipoGara = new javax.swing.JComboBox<>();
         jScrollPane1 = new javax.swing.JScrollPane();
         LST_Atleti = new javax.swing.JList<>();
+        RBT_M = new javax.swing.JRadioButton();
+        RBT_F = new javax.swing.JRadioButton();
+        BTN_Avvia = new javax.swing.JButton();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        LST_Gare = new javax.swing.JList<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -49,28 +54,69 @@ public class FRM_Gara extends javax.swing.JFrame {
         });
         jScrollPane1.setViewportView(LST_Atleti);
 
+        RBT_M.setText("Maschio");
+        RBT_M.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RBT_MActionPerformed(evt);
+            }
+        });
+
+        RBT_F.setText("Femmina");
+        RBT_F.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RBT_FActionPerformed(evt);
+            }
+        });
+
+        BTN_Avvia.setText("Avvia");
+
+        LST_Gare.setModel(new javax.swing.AbstractListModel<String>() {
+            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+            public int getSize() { return strings.length; }
+            public String getElementAt(int i) { return strings[i]; }
+        });
+        jScrollPane2.setViewportView(LST_Gare);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGap(19, 19, 19)
-                .addComponent(CMB_TipoGara, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(40, 40, 40)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(CMB_TipoGara, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(RBT_M)
+                        .addGap(7, 7, 7))
+                    .addComponent(RBT_F))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(498, Short.MAX_VALUE))
+                .addGap(48, 48, 48)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(45, 45, 45)
+                .addComponent(BTN_Avvia)
+                .addContainerGap(227, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(45, 45, 45)
-                        .addComponent(CMB_TipoGara, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(16, 16, 16)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(58, Short.MAX_VALUE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createSequentialGroup()
+                            .addGap(45, 45, 45)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(CMB_TipoGara, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(RBT_M))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addComponent(RBT_F))
+                        .addGroup(layout.createSequentialGroup()
+                            .addGap(15, 15, 15)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 373, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(BTN_Avvia)
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 373, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(26, Short.MAX_VALUE))
         );
 
         pack();
@@ -79,6 +125,14 @@ public class FRM_Gara extends javax.swing.JFrame {
     private void CMB_TipoGaraActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CMB_TipoGaraActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_CMB_TipoGaraActionPerformed
+
+    private void RBT_MActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RBT_MActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_RBT_MActionPerformed
+
+    private void RBT_FActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RBT_FActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_RBT_FActionPerformed
 
     /**
      * @param args the command line arguments
@@ -106,8 +160,13 @@ public class FRM_Gara extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton BTN_Avvia;
     private javax.swing.JComboBox<String> CMB_TipoGara;
     private javax.swing.JList<String> LST_Atleti;
+    private javax.swing.JList<String> LST_Gare;
+    private javax.swing.JRadioButton RBT_F;
+    private javax.swing.JRadioButton RBT_M;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
     // End of variables declaration//GEN-END:variables
 }
