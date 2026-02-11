@@ -16,7 +16,7 @@ public class Gara implements Maschile , Femminile{
     /**
      * 
      */
-    protected ArrayList<Atleta> atleti;
+    protected ArrayList<Atleta> atletiList;
 
     /**
      * 
@@ -29,14 +29,16 @@ public class Gara implements Maschile , Femminile{
     public void iscrizione(enum Tipo) {
         // TODO implement here
         if(Tipo==Velocista){
-            Atleta atleta =new Velocista();
-            atleti
+            Atleta atleta =new Velocisti();
+            atletiList.add(atleta);
         }
         else if(Tipo==Pesista){
-            Atleta atleta =new Pesista();
+            Atleta atleta =new Lanicatori();
+            atletiList.add(atleta);
         }
         else{
             Atleta atleta =new Saltatori();
+            atletiList.add(atleta);
         }
     }
 
