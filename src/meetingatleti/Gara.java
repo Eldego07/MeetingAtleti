@@ -26,8 +26,18 @@ public class Gara implements Maschile , Femminile{
     /**
      * @return
      */
-    public void iscrizione() {
+    public void iscrizione(enum Tipo) {
         // TODO implement here
+        if(Tipo==Velocista){
+            Atleta atleta =new Velocista();
+            atleti
+        }
+        else if(Tipo==Pesista){
+            Atleta atleta =new Pesista();
+        }
+        else{
+            Atleta atleta =new Saltatori();
+        }
     }
 
     @Override
