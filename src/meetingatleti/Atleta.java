@@ -1,4 +1,6 @@
 package meetingatleti;
+
+
 import java.io.*;
 import java.util.*;
 
@@ -36,6 +38,5 @@ abstract class Atleta {
         // TODO implement here
         return null;
     }
-
-
+    
 }

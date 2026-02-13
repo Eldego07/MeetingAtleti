@@ -1,5 +1,3 @@
-package meetingatleti;
-
 
 import java.io.*;
 import java.util.*;
@@ -7,35 +5,39 @@ import java.util.*;
 /**
  * 
  */
-public class Velocisti extends Atleta {
+public class Meeting {
 
     /**
      * Default constructor
      */
-    public Velocisti() {
+    public Meeting() {
     }
 
     /**
      * 
      */
-    private Integer velocitaCorsa;
+    private ArrayList<Gara> gare;
 
     /**
      * 
      */
-    private Integer tempoReazione;
+    public void Attribute1;
+
+
+
+
 
     /**
      * 
      */
-    private Integer tempoOstacolo;
-
-
+    public Meeting() {
+        // TODO implement here
+    }
 
     /**
      * @return
      */
-    public Integer calcolaPunteggio() {
+    public void aggiungiGara() {
         // TODO implement here
         return null;
     }

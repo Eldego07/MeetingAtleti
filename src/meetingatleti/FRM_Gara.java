@@ -36,6 +36,7 @@ public class FRM_Gara extends javax.swing.JFrame {
         BTN_Avvia = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         LST_Gare = new javax.swing.JList<>();
+        LBL_Fltri = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -77,19 +78,27 @@ public class FRM_Gara extends javax.swing.JFrame {
         });
         jScrollPane2.setViewportView(LST_Gare);
 
+        LBL_Fltri.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        LBL_Fltri.setText("FILTRI");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(19, 19, 19)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(CMB_TipoGara, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(RBT_M)
-                        .addGap(7, 7, 7))
-                    .addComponent(RBT_F))
+                        .addGap(19, 19, 19)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(CMB_TipoGara, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(RBT_M)
+                                .addGap(7, 7, 7))
+                            .addComponent(RBT_F)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(71, 71, 71)
+                        .addComponent(LBL_Fltri, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(48, 48, 48)
@@ -104,7 +113,9 @@ public class FRM_Gara extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addGroup(layout.createSequentialGroup()
-                            .addGap(45, 45, 45)
+                            .addGap(11, 11, 11)
+                            .addComponent(LBL_Fltri)
+                            .addGap(18, 18, 18)
                             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                 .addComponent(CMB_TipoGara, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(RBT_M))
@@ -162,6 +173,7 @@ public class FRM_Gara extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton BTN_Avvia;
     private javax.swing.JComboBox<String> CMB_TipoGara;
+    private javax.swing.JLabel LBL_Fltri;
     private javax.swing.JList<String> LST_Atleti;
     private javax.swing.JList<String> LST_Gare;
     private javax.swing.JRadioButton RBT_F;

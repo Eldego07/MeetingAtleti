@@ -1,4 +1,6 @@
 package meetingatleti;
+
+
 import java.io.*;
 import java.util.*;
 
@@ -8,6 +10,7 @@ import java.util.*;
 public class Meeting {
 
     /**
+     * Default constructor
      */
     public Meeting() {
     }
@@ -16,13 +19,10 @@ public class Meeting {
      * 
      */
     private ArrayList<Gara> gare;
-
-
     /**
-     * @return
+     * 
      */
     public void aggiungiGara() {
-        // TODO implement here
     }
 
 }

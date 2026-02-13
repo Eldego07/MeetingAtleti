@@ -1,5 +1,3 @@
-package meetingatleti;
-
 
 import java.io.*;
 import java.util.*;
@@ -7,18 +5,18 @@ import java.util.*;
 /**
  * 
  */
-public class Saltatori extends Atleta {
+public class Lanciatori extends Atleta {
 
     /**
      * Default constructor
      */
-    public Saltatori() {
+    public Lanciatori() {
     }
 
     /**
      * 
      */
-    private Integer distanzaSalto;
+    private Integer distanzaLancio;
 
     /**
      * @return

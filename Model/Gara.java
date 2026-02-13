@@ -1,5 +1,3 @@
-package meetingatleti;
-
 
 import java.io.*;
 import java.util.*;
@@ -57,7 +55,8 @@ public class Gara {
      * @return
      */
     public void iscrizione() {
-        
+        // TODO implement here
+        return null;
     }
 
 }

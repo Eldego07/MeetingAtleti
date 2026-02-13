@@ -7,10 +7,16 @@ import java.util.*;
  */
 public interface Ostacolista {
 
+    
     /**
-     * 
+     * @return
      */
-    public Integer tempoOstacolo=null;
+    public Integer getTempoOstacolo();
+
+    /**
+     * @return
+     */
+    public Integer setTempoOstacolo();
 
 
 }
