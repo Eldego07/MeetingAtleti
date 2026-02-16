@@ -5,6 +5,7 @@
         <group>
             <file>file:/C:/Users/diego/OneDrive/Documenti/NetBeansProjects/MeetingAtleti/src/meetingatleti/FRM_Atleti.java</file>
             <file>file:/C:/Users/diego/OneDrive/Documenti/NetBeansProjects/MeetingAtleti/src/meetingatleti/FRM_Gara.java</file>
+<<<<<<< Updated upstream
             <file>file:/C:/Users/diego/OneDrive/Documenti/NetBeansProjects/MeetingAtleti/src/meetingatleti/Gara.java</file>
             <file>file:/C:/Users/diego/OneDrive/Documenti/NetBeansProjects/MeetingAtleti/src/meetingatleti/Lanciatori.java</file>
             <file>file:/C:/Users/diego/OneDrive/Documenti/NetBeansProjects/MeetingAtleti/src/meetingatleti/Meeting.java</file>
@@ -13,6 +14,8 @@
             <file>file:/C:/Users/diego/OneDrive/Documenti/NetBeansProjects/MeetingAtleti/src/meetingatleti/TipoGaraCorsa.java</file>
             <file>file:/C:/Users/diego/OneDrive/Documenti/NetBeansProjects/MeetingAtleti/src/meetingatleti/TipoGaraSalto.java</file>
             <file>file:/C:/Users/diego/OneDrive/Documenti/NetBeansProjects/MeetingAtleti/src/meetingatleti/Velocisti.java</file>
+=======
+>>>>>>> Stashed changes
         </group>
     </open-files>
 </project-private>
