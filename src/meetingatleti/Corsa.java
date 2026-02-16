@@ -1,24 +1,13 @@
 package meetingatleti;
 
-
 import java.io.*;
 import java.util.*;
 
 /**
- * 
+ * Interfaccia per le gare di corsa.
+ * Implementata da Meeting per filtrare le gare di tipo Corsa.
  */
 public interface Corsa {
-
-
-
-    /**
-     * @return
-     */
-    public ArrayList<Gara> getGareC();
-
-    /**
-     * @return
-     */
-    public ArrayList<Atleta> getAtletiC();
-
+    ArrayList<Gara> getGareC();
+    ArrayList<Atleta> getAtletiC();
 }

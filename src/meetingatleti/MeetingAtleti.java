@@ -1,20 +1,15 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
- */
 package meetingatleti;
 
 /**
+ * Punto di avvio dell'applicazione.
+ * Apre FRM_Gara come finestra principale.
  *
  * @author CASOLARO.DIEGO
  */
 public class MeetingAtleti {
 
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String[] args) {
-        // TODO code application logic here
+        // Avvia FRM_Gara (che include il proprio main con look&feel Nimbus)
+        FRM_Gara.main(args);
     }
-    
 }
