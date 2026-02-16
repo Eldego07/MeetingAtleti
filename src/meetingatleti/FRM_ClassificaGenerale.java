@@ -21,9 +21,25 @@ public class FRM_ClassificaGenerale extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger =
             java.util.logging.Logger.getLogger(FRM_ClassificaGenerale.class.getName());
 
+    /** Mappa riga di TBL_Vincitori → oggetto Gara reale. */
+    private final java.util.List<Gara> indiceGare = new ArrayList<>();
+
     public FRM_ClassificaGenerale() {
         initComponents();
         aggiornaRiepilogo();
+        // Fix 4: selezionare una riga in TBL_Vincitori aggiorna TBL_GaraCorrente
+        TBL_Vincitori.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int row = TBL_Vincitori.getSelectedRow();
+                if (row >= 0 && row < indiceGare.size()) {
+                    Gara sel = indiceGare.get(row);
+                    AppData.getInstance().setGaraCorrente(sel);
+                    LBL_SottoTitolo.setText("Dettaglio punteggi  –  "
+                            + sel.getNomeGara() + "  [" + sel.getCategoria() + "]");
+                    populateTabellaGara();
+                }
+            }
+        });
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -45,8 +61,10 @@ public class FRM_ClassificaGenerale extends javax.swing.JFrame {
     private void populateTabellaVincitori(Meeting meeting) {
         DefaultTableModel model = (DefaultTableModel) TBL_Vincitori.getModel();
         model.setRowCount(0);
+        indiceGare.clear(); // reset mappa riga → Gara
 
         for (Gara g : meeting.getGare()) {
+            indiceGare.add(g);  // riga N corrisponde a gare.get(N)
             Atleta v = g.trovaVincitore();
             if (v != null) {
                 model.addRow(new Object[]{
@@ -63,10 +81,7 @@ public class FRM_ClassificaGenerale extends javax.swing.JFrame {
                     g.getNomeGara(),
                     g.getCategoria(),
                     g.getTipoDescrizione(),
-                    0,
-                    "–",
-                    "–",
-                    "–"
+                    0, "–", "–", "–"
                 });
             }
         }
@@ -106,10 +121,11 @@ public class FRM_ClassificaGenerale extends javax.swing.JFrame {
     private String getStatisticaLabel(Atleta a) {
         if (a instanceof Velocisti) {
             Velocisti v = (Velocisti) a;
-            if (v.getVelocitaCorsa() != null && v.getVelocitaCorsa() > 0)
-                return v.getVelocitaCorsa() + " km/h";
-            else
-                return "T.Rea: " + v.getTempoReazione() + " cs";
+            if (v.isOstacolista())
+                return v.getTempoGara() + "s  pen:" + v.getTempoOstacolo() + "cs";
+            if (v.isVelocista())
+                return v.getTempoGara() + "s  reaz:" + v.getTempoReazione() + "cs";
+            return v.getTempoGara() + "s";
         } else if (a instanceof Saltatori)
             return ((Saltatori) a).getDistanzaSalto() + " cm";
         else if (a instanceof Lanciatori)

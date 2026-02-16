@@ -1,7 +1,5 @@
 package meetingatleti;
-/**
- * 
- */
+
 public enum TipoGaraCorsa {
     centom,
     duecentom,
@@ -13,5 +11,6 @@ public enum TipoGaraCorsa {
     Ostacoli,
     quattrocentoOstacoli,
     tremilaSiepi,
-    Maradona
+    Maratona,
+    Maradona   // mantenuto per compatibilità con il progetto originale
 }

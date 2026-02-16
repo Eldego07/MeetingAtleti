@@ -59,17 +59,7 @@ public class FRM_Gara extends javax.swing.JFrame {
         });
 
         // tasto destro su LST_Gare → menu contestuale "Nuova Gara"
-        LST_Gare.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e) {
-                if (SwingUtilities.isRightMouseButton(e)) {
-                    // seleziona la riga sotto il cursore prima di mostrare il menu
-                    int idx = LST_Gare.locationToIndex(e.getPoint());
-                    if (idx >= 0) LST_Gare.setSelectedIndex(idx);
-                    mostraMenuGara(e);
-                }
-            }
-        });
+        LST_Gare.addMouseListener(new GareMouseHandler());
 
         aggiornaListaGare();
     }
@@ -126,17 +116,15 @@ public class FRM_Gara extends javax.swing.JFrame {
     private boolean corrispondeTipo(Atleta a, String tipoFiltro) {
         switch (tipoFiltro.trim()) {
             case "Velocista":
-                // Velocista con velocitaCorsa > 0 (non fondometrista)
-                return (a instanceof Velocisti) && ((Velocisti) a).getVelocitaCorsa() != null
-                        && ((Velocisti) a).getVelocitaCorsa() > 0;
+                return (a instanceof Velocisti) && ((Velocisti) a).isVelocista();
             case "Pesista":
                 return a instanceof Lanciatori;
             case "Saltatore":
                 return a instanceof Saltatori;
             case "Fondometrista":
-                // Velocisti usati come fondometristi hanno velocitaCorsa == 0
-                return (a instanceof Velocisti) && ((Velocisti) a).getVelocitaCorsa() != null
-                        && ((Velocisti) a).getVelocitaCorsa() == 0;
+                return (a instanceof Velocisti) && ((Velocisti) a).isFondometrista();
+            case "Ostacolista":
+                return (a instanceof Velocisti) && ((Velocisti) a).isOstacolista();
             default:
                 return true;
         }
@@ -198,31 +186,40 @@ public class FRM_Gara extends javax.swing.JFrame {
         if (sceltaTipo < 0) return;
 
         Gara nuova = new Gara(nomeGara.trim(), categoria);
+
+        // ── usiamo String[] per tutti i dialog, poi valueOf() per convertire ──
+        // Questo evita di passare array di enum a JOptionPane (classloading issue
+        // in NetBeans quando il .form è presente nello stesso progetto)
         switch (sceltaTipo) {
-            case 0: // Corsa
-                TipoGaraCorsa[] valoriCorsa = TipoGaraCorsa.values();
-                TipoGaraCorsa sceltaCorsa = (TipoGaraCorsa) JOptionPane.showInputDialog(
+            case 0: { // Corsa
+                String[] valori = {"centom","duecentom","quattrocentom","ottocentom",
+                        "millecinquecentom","cinquemilam","diecimilam",
+                        "Ostacoli","quattrocentoOstacoli","tremilaSiepi","Maratona","Maradona"};
+                String scelta = (String) JOptionPane.showInputDialog(
                         this, "Specialità corsa:", "Nuova Gara",
-                        JOptionPane.PLAIN_MESSAGE, null, valoriCorsa, valoriCorsa[0]);
-                if (sceltaCorsa == null) return;
-                nuova.setTipoGaraCorsa(sceltaCorsa);
+                        JOptionPane.PLAIN_MESSAGE, null, valori, valori[0]);
+                if (scelta == null) return;
+                nuova.setTipoGaraCorsa(TipoGaraCorsa.valueOf(scelta));
                 break;
-            case 1: // Salto
-                TipoGaraSalto[] valoriSalto = TipoGaraSalto.values();
-                TipoGaraSalto sceltaSalto = (TipoGaraSalto) JOptionPane.showInputDialog(
+            }
+            case 1: { // Salto
+                String[] valori = {"Alto","Lungo","Asta","Triplo"};
+                String scelta = (String) JOptionPane.showInputDialog(
                         this, "Specialità salto:", "Nuova Gara",
-                        JOptionPane.PLAIN_MESSAGE, null, valoriSalto, valoriSalto[0]);
-                if (sceltaSalto == null) return;
-                nuova.setTipoGaraSalto(sceltaSalto);
+                        JOptionPane.PLAIN_MESSAGE, null, valori, valori[0]);
+                if (scelta == null) return;
+                nuova.setTipoGaraSalto(TipoGaraSalto.valueOf(scelta));
                 break;
-            case 2: // Lancio
-                TipoGaraLancio[] valoriLancio = TipoGaraLancio.values();
-                TipoGaraLancio sceltaLancio = (TipoGaraLancio) JOptionPane.showInputDialog(
+            }
+            case 2: { // Lancio
+                String[] valori = {"Peso","Disco","Martello","Giavellotto"};
+                String scelta = (String) JOptionPane.showInputDialog(
                         this, "Specialità lancio:", "Nuova Gara",
-                        JOptionPane.PLAIN_MESSAGE, null, valoriLancio, valoriLancio[0]);
-                if (sceltaLancio == null) return;
-                nuova.setTipoGaraLancio(sceltaLancio);
+                        JOptionPane.PLAIN_MESSAGE, null, valori, valori[0]);
+                if (scelta == null) return;
+                nuova.setTipoGaraLancio(TipoGaraLancio.valueOf(scelta));
                 break;
+            }
         }
 
         AppData.getInstance().getMeeting().aggiungiGara(nuova);
@@ -268,15 +265,8 @@ public class FRM_Gara extends javax.swing.JFrame {
         AppData.getInstance().setGaraCorrente(sel);
         FRM_Atleti formAtleti = new FRM_Atleti();
         formAtleti.setVisible(true);
-
-        // quando FRM_Atleti si chiude, aggiorna LST_Atleti con i filtri attivi
-        formAtleti.addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosed(java.awt.event.WindowEvent e) {
-                aggiornaListaAtleti();
-                aggiornaListaGare(); // aggiorna anche il conteggio atleti in LST_Gare
-            }
-        });
+        // quando FRM_Atleti si chiude, aggiorna le liste
+        formAtleti.addWindowListener(new AtletiWindowHandler());
     }
 
     // ── classifica ─────────────────────────────────────────────────────────
@@ -452,6 +442,29 @@ public class FRM_Gara extends javax.swing.JFrame {
     private javax.swing.JRadioButton      RBT_M;
     private javax.swing.JScrollPane       jScrollPane1;
     private javax.swing.JScrollPane       jScrollPane2;
+
+    // ── classi interne nominate (evitano FRM_Gara$1 che NetBeans non trova) ──
+
+    /** Gestisce il tasto destro sulla lista gare. */
+    private class GareMouseHandler extends java.awt.event.MouseAdapter {
+        @Override
+        public void mousePressed(java.awt.event.MouseEvent e) {
+            if (SwingUtilities.isRightMouseButton(e)) {
+                int idx = LST_Gare.locationToIndex(e.getPoint());
+                if (idx >= 0) LST_Gare.setSelectedIndex(idx);
+                mostraMenuGara(e);
+            }
+        }
+    }
+
+    /** Aggiorna le liste quando FRM_Atleti viene chiuso. */
+    private class AtletiWindowHandler extends java.awt.event.WindowAdapter {
+        @Override
+        public void windowClosed(java.awt.event.WindowEvent e) {
+            aggiornaListaAtleti();
+            aggiornaListaGare();
+        }
+    }
 
     // ── main per avvio standalone ─────────────────────────────────────────
 

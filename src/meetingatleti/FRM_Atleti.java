@@ -71,9 +71,9 @@ public class FRM_Atleti extends javax.swing.JFrame {
     /**
      * Aggiorna LBL_StatisticaUnica in base al tipo selezionato nel combo.
      *
-     *   Velocista     → "Velocità (km/h)"
-     *   Fondometrista → "T. Reazione (cs)"   [usa Velocisti con velocitaCorsa=0]
-     *   Ostacolista   → "T. Ostacolo (cs)"   [usa Velocisti con tempoOstacolo]
+     *   Velocista     → "Tempo gara (s)"  [+ reazione 15cs default]
+     *   Fondometrista → "Tempo gara (s)"  [nessuna reazione]
+     *   Ostacolista   → "Tempo gara (s)"  [+ penalità cs]
      *   Pesista       → "Lancio (cm)"
      *   Saltatore     → "Salto (cm)"
      */
@@ -81,11 +81,21 @@ public class FRM_Atleti extends javax.swing.JFrame {
         String tipo = (String) CMB_Tipo.getSelectedItem();
         if (tipo == null) return;
         switch (tipo) {
-            case "Velocista":     LBL_StatisticaUnica.setText("Velocità (km/h)");   break;
-            case "Fondometrista": LBL_StatisticaUnica.setText("T. Reazione (cs)");  break;
-            case "Ostacolista":   LBL_StatisticaUnica.setText("T. Ostacolo (cs)");  break;
-            case "Pesista":       LBL_StatisticaUnica.setText("Lancio (cm)");        break;
-            case "Saltatore":     LBL_StatisticaUnica.setText("Salto (cm)");         break;
+            case "Velocista":
+                LBL_StatisticaUnica.setText("Tempo gara (s)");
+                break;
+            case "Fondometrista":
+                LBL_StatisticaUnica.setText("Tempo gara (s)");
+                break;
+            case "Ostacolista":
+                LBL_StatisticaUnica.setText("Tempo gara (s)");
+                break;
+            case "Pesista":
+                LBL_StatisticaUnica.setText("Lancio (cm)");
+                break;
+            case "Saltatore":
+                LBL_StatisticaUnica.setText("Salto (cm)");
+                break;
         }
     }
 
@@ -123,28 +133,29 @@ public class FRM_Atleti extends javax.swing.JFrame {
         Atleta atleta;
         switch (tipo) {
             case "Velocista": {
+                // velocista: inserisce il tempo gara; reazione default 15cs (0.15s)
                 Velocisti v = new Velocisti(nome, sesso, eta, nMaglia);
-                v.setVelocitaCorsa(statistica);
-                v.setTempoReazione(0);
+                v.setTempoGara((double) statistica);   // statistica = tempo in secondi (intero)
+                v.setTempoReazione(15);                // reazione standard da sparo: 0.15s
                 v.setTempoOstacolo(0);
                 atleta = v;
                 break;
             }
             case "Fondometrista": {
-                // fondometrista: usa Velocisti (implementa Fondometrista) con tempoReazione
+                // fondometrista: solo tempo gara, nessuna reazione
                 Velocisti f = new Velocisti(nome, sesso, eta, nMaglia);
-                f.setVelocitaCorsa(0);
-                f.setTempoReazione(statistica);
+                f.setTempoGara((double) statistica);
+                f.setTempoReazione(0);
                 f.setTempoOstacolo(0);
                 atleta = f;
                 break;
             }
             case "Ostacolista": {
-                // ostacolista: usa Velocisti (implementa Ostacolista) con tempoOstacolo
+                // ostacolista: tempo gara, penalità default 0cs (nessun ostacolo abbattuto)
                 Velocisti o = new Velocisti(nome, sesso, eta, nMaglia);
-                o.setVelocitaCorsa(0);
+                o.setTempoGara((double) statistica);
                 o.setTempoReazione(0);
-                o.setTempoOstacolo(statistica);
+                o.setTempoOstacolo(0);   // 0 = nessun ostacolo abbattuto
                 atleta = o;
                 break;
             }

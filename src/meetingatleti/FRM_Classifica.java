@@ -78,10 +78,11 @@ public class FRM_Classifica extends javax.swing.JFrame {
     private String getStatisticaLabel(Atleta a) {
         if (a instanceof Velocisti) {
             Velocisti v = (Velocisti) a;
-            if (v.getVelocitaCorsa() != null && v.getVelocitaCorsa() > 0)
-                return v.getVelocitaCorsa() + " km/h";
-            else
-                return "T.Rea: " + v.getTempoReazione() + " cs";
+            if (v.isOstacolista())
+                return v.getTempoGara() + "s  pen:" + v.getTempoOstacolo() + "cs";
+            if (v.isVelocista())
+                return v.getTempoGara() + "s  reaz:" + v.getTempoReazione() + "cs";
+            return v.getTempoGara() + "s";   // fondometrista
         } else if (a instanceof Saltatori) {
             return ((Saltatori) a).getDistanzaSalto() + " cm";
         } else if (a instanceof Lanciatori) {
