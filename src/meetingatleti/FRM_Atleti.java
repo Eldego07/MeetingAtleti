@@ -1,22 +1,25 @@
 package meetingatleti;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
 
 /**
  * Form 1 di 3 – Inserimento atleti.
  *
- * Componenti (stessi nomi del .form):
- *   LBL_Nome, TXT_Nome
- *   LBL_Sesso, TXT_Sesso
- *   LBL_Eta, TXT_Eta
- *   LBL_Tipo, CMB_Tipo  (Velocista | Pesista | Saltatore | Fondometrista)
- *   LBL_NMaglia, TXT_NMaglia     ← pettorale
- *   LBL_StatisticaUnica, TXT_StatisticaUnica  ← campo dinamico per tipo
- *   BTN_Inserisci
- *   BTN_Sinistra  ← disabilitato (siamo al primo form)
- *   BTN_Destra    ← apre FRM_Classifica (Form 2)
+ * Componenti del .form originali (nomi invariati):
+ *   LBL_Nome / TXT_Nome
+ *   LBL_Sesso / TXT_Sesso
+ *   LBL_Eta / TXT_Eta
+ *   LBL_NMaglia / TXT_NMaglia          ← pettorale
+ *   LBL_Tipo / CMB_Tipo
+ *   LBL_StatisticaUnica / TXT_StatisticaUnica  ← tempo gara / distanza
+ *   BTN_Inserisci, BTN_Sinistra, BTN_Destra
+ *
+ * Componente AGGIUNTO (non nel .form ma necessario per le interfacce UML):
+ *   LBL_Statistica2 / TXT_Statistica2
+ *     → visibile solo per Velocista  (tempoReazione  – interfaccia Fondometrista)
+ *     → visibile solo per Ostacolista (tempoOstacolo – interfaccia Ostacolista)
+ *     → nascosto per Fondometrista, Pesista, Saltatore
  */
 public class FRM_Atleti extends javax.swing.JFrame {
 
@@ -24,125 +27,166 @@ public class FRM_Atleti extends javax.swing.JFrame {
 
     public FRM_Atleti() {
         initComponents();
-        // titolo con la gara corrente
         Gara g = AppData.getInstance().getGaraCorrente();
         if (g != null)
             setTitle("Inserimento Atleti  [1/3]  →  " + g.getNomeGara() + "  [" + g.getCategoria() + "]");
-        // popola CMB_Tipo solo con i tipi compatibili con la gara
         aggiornaCMBTipo();
-        aggiornaLabelStatistica();
+        aggiornaCampiTipo();   // imposta label + visibilità al primo avvio
     }
 
-    /**
-     * Popola CMB_Tipo con i soli tipi di atleta ammessi dalla gara corrente.
-     *   Corsa  → Velocista, Fondometrista, Ostacolista  (tutti Velocisti internamente)
-     *   Salto  → Saltatore
-     *   Lancio → Pesista
-     *   Nessuna gara / generica → tutti i tipi
-     */
+    // ══════════════════════════════════════════════════════════════════════
+    //  POPOLA CMB_Tipo in base al tipo di gara corrente
+    // ══════════════════════════════════════════════════════════════════════
+
     private void aggiornaCMBTipo() {
         Gara g = AppData.getInstance().getGaraCorrente();
         CMB_Tipo.removeAllItems();
         if (g == null) {
-            // nessuna gara: mostra tutti
             CMB_Tipo.addItem("Velocista");
             CMB_Tipo.addItem("Fondometrista");
             CMB_Tipo.addItem("Ostacolista");
             CMB_Tipo.addItem("Pesista");
             CMB_Tipo.addItem("Saltatore");
         } else if (g.getTipoGaraCorsa() != null) {
-            // gara di corsa: solo i corridori
             CMB_Tipo.addItem("Velocista");
             CMB_Tipo.addItem("Fondometrista");
             CMB_Tipo.addItem("Ostacolista");
         } else if (g.getTipoGaraSalto() != null) {
-            // gara di salto: solo saltatori
             CMB_Tipo.addItem("Saltatore");
         } else if (g.getTipoGaraLancio() != null) {
-            // gara di lancio: solo pesisti
             CMB_Tipo.addItem("Pesista");
         }
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  LOGICA APPLICATIVA
+    //  AGGIORNA LABEL E VISIBILITÀ DEI CAMPI IN BASE AL TIPO
     // ══════════════════════════════════════════════════════════════════════
 
     /**
-     * Aggiorna LBL_StatisticaUnica in base al tipo selezionato nel combo.
+     * Chiamato ogni volta che CMB_Tipo cambia.
      *
-     *   Velocista     → "Tempo gara (s)"  [+ reazione 15cs default]
-     *   Fondometrista → "Tempo gara (s)"  [nessuna reazione]
-     *   Ostacolista   → "Tempo gara (s)"  [+ penalità cs]
-     *   Pesista       → "Lancio (cm)"
-     *   Saltatore     → "Salto (cm)"
+     *  Velocista     → TXT_StatisticaUnica = "Tempo gara (s)"
+     *                  TXT_Statistica2     = "T.Reazione (cs)"  VISIBILE
+     *                    (interfaccia Fondometrista – tempoReazione allo sparo)
+     *
+     *  Ostacolista   → TXT_StatisticaUnica = "Tempo gara (s)"
+     *                  TXT_Statistica2     = "T.Ostacolo (cs)"  VISIBILE
+     *                    (interfaccia Ostacolista – penalità per ostacolo abbattuto)
+     *
+     *  Fondometrista → TXT_StatisticaUnica = "Tempo gara (s)"
+     *                  TXT_Statistica2     = NASCOSTO
+     *
+     *  Pesista       → TXT_StatisticaUnica = "Lancio (cm)"
+     *                  TXT_Statistica2     = NASCOSTO
+     *
+     *  Saltatore     → TXT_StatisticaUnica = "Salto (cm)"
+     *                  TXT_Statistica2     = NASCOSTO
      */
-    private void aggiornaLabelStatistica() {
+    private void aggiornaCampiTipo() {
         String tipo = (String) CMB_Tipo.getSelectedItem();
         if (tipo == null) return;
+
         switch (tipo) {
             case "Velocista":
-                LBL_StatisticaUnica.setText("Tempo gara (s)");
-                break;
-            case "Fondometrista":
-                LBL_StatisticaUnica.setText("Tempo gara (s)");
+                LBL_StatisticaUnica.setText("Tempo gara (s):");
+                LBL_Statistica2.setText("T.Reazione (cs):");
+                LBL_Statistica2.setVisible(true);
+                TXT_Statistica2.setVisible(true);
+                TXT_Statistica2.setText("15");   // default: 15cs = 0.15s (reazione tipica)
                 break;
             case "Ostacolista":
-                LBL_StatisticaUnica.setText("Tempo gara (s)");
+                LBL_StatisticaUnica.setText("Tempo gara (s):");
+                LBL_Statistica2.setText("T.Ostacolo (cs):");
+                LBL_Statistica2.setVisible(true);
+                TXT_Statistica2.setVisible(true);
+                TXT_Statistica2.setText("0");    // default: 0 ostacoli abbattuti
+                break;
+            case "Fondometrista":
+                LBL_StatisticaUnica.setText("Tempo gara (s):");
+                LBL_Statistica2.setVisible(false);
+                TXT_Statistica2.setVisible(false);
+                TXT_Statistica2.setText("0");
                 break;
             case "Pesista":
-                LBL_StatisticaUnica.setText("Lancio (cm)");
+                LBL_StatisticaUnica.setText("Lancio (cm):");
+                LBL_Statistica2.setVisible(false);
+                TXT_Statistica2.setVisible(false);
+                TXT_Statistica2.setText("0");
                 break;
             case "Saltatore":
-                LBL_StatisticaUnica.setText("Salto (cm)");
+                LBL_StatisticaUnica.setText("Salto (cm):");
+                LBL_Statistica2.setVisible(false);
+                TXT_Statistica2.setVisible(false);
+                TXT_Statistica2.setText("0");
                 break;
         }
+        pack();  // ridimensiona la finestra quando i campi appaiono/scompaiono
     }
 
-    /** Legge i campi, crea l'atleta e lo iscrive alla gara. */
+    // ══════════════════════════════════════════════════════════════════════
+    //  INSERIMENTO ATLETA
+    // ══════════════════════════════════════════════════════════════════════
+
     private void inserisciAtleta() {
         Gara gara = AppData.getInstance().getGaraCorrente();
-        if (gara == null) {
-            errore("Nessuna gara selezionata!\nTorna su FRM_Gara e premi Avvia.");
-            return;
-        }
+        if (gara == null) { errore("Nessuna gara selezionata!\nTorna su FRM_Gara e seleziona una gara."); return; }
 
         String nome  = TXT_Nome.getText().trim();
         String sesso = TXT_Sesso.getText().trim().toUpperCase();
         String tipo  = (String) CMB_Tipo.getSelectedItem();
 
         if (nome.isEmpty()) { errore("Inserisci il nome."); return; }
-        if (!sesso.equals("M") && !sesso.equals("F")) {
-            errore("Sesso deve essere M oppure F."); return;
-        }
+        if (!sesso.equals("M") && !sesso.equals("F")) { errore("Sesso: M oppure F."); return; }
 
-        int eta, nMaglia, statistica;
+        int eta, nMaglia;
         try { eta = Integer.parseInt(TXT_Eta.getText().trim()); }
         catch (NumberFormatException e) { errore("Età non valida."); return; }
 
         try { nMaglia = Integer.parseInt(TXT_NMaglia.getText().trim()); }
         catch (NumberFormatException e) { errore("Numero maglia non valido."); return; }
 
+        // ── statistica principale (tempo gara o distanza) ─────────────────
+        int statistica;
         try {
             statistica = Integer.parseInt(TXT_StatisticaUnica.getText().trim());
             if (statistica <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            errore(LBL_StatisticaUnica.getText() + " non valida (numero intero > 0)."); return;
         }
-        catch (NumberFormatException e) { errore("Statistica non valida (numero intero > 0)."); return; }
 
-        // crea atleta del tipo corretto
+        // ── statistica secondaria (reazione / penalità ostacolo) ──────────
+        int statistica2 = 0;
+        if (TXT_Statistica2.isVisible()) {
+            try {
+                statistica2 = Integer.parseInt(TXT_Statistica2.getText().trim());
+                if (statistica2 < 0) throw new NumberFormatException();
+            } catch (NumberFormatException e) {
+                errore(LBL_Statistica2.getText() + " non valida (numero intero ≥ 0)."); return;
+            }
+        }
+
+        // ── crea l'atleta del tipo corretto ───────────────────────────────
         Atleta atleta;
         switch (tipo) {
             case "Velocista": {
-                // velocista: inserisce il tempo gara; reazione default 15cs (0.15s)
+                // usa interfaccia Fondometrista → setTempoReazione()
                 Velocisti v = new Velocisti(nome, sesso, eta, nMaglia);
-                v.setTempoGara((double) statistica);   // statistica = tempo in secondi (intero)
-                v.setTempoReazione(15);                // reazione standard da sparo: 0.15s
+                v.setTempoGara((double) statistica);
+                v.setTempoReazione(statistica2);   // ← da TXT_Statistica2
                 v.setTempoOstacolo(0);
                 atleta = v;
                 break;
             }
+            case "Ostacolista": {
+                // usa interfaccia Ostacolista → setTempoOstacolo()
+                Velocisti o = new Velocisti(nome, sesso, eta, nMaglia);
+                o.setTempoGara((double) statistica);
+                o.setTempoReazione(0);
+                o.setTempoOstacolo(statistica2);   // ← da TXT_Statistica2
+                atleta = o;
+                break;
+            }
             case "Fondometrista": {
-                // fondometrista: solo tempo gara, nessuna reazione
                 Velocisti f = new Velocisti(nome, sesso, eta, nMaglia);
                 f.setTempoGara((double) statistica);
                 f.setTempoReazione(0);
@@ -150,22 +194,15 @@ public class FRM_Atleti extends javax.swing.JFrame {
                 atleta = f;
                 break;
             }
-            case "Ostacolista": {
-                // ostacolista: tempo gara, penalità default 0cs (nessun ostacolo abbattuto)
-                Velocisti o = new Velocisti(nome, sesso, eta, nMaglia);
-                o.setTempoGara((double) statistica);
-                o.setTempoReazione(0);
-                o.setTempoOstacolo(0);   // 0 = nessun ostacolo abbattuto
-                atleta = o;
-                break;
-            }
             case "Pesista": {
+                // usa interfaccia ILanciatore → setDistanzaLancio()
                 Lanciatori l = new Lanciatori(nome, sesso, eta, nMaglia);
                 l.setDistanzaLancio(statistica);
                 atleta = l;
                 break;
             }
             case "Saltatore": {
+                // usa interfaccia ISaltatore → setDistanzaSalto()
                 Saltatori s = new Saltatori(nome, sesso, eta, nMaglia);
                 s.setDistanzaSalto(statistica);
                 atleta = s;
@@ -175,6 +212,7 @@ public class FRM_Atleti extends javax.swing.JFrame {
                 errore("Tipo atleta non riconosciuto."); return;
         }
 
+        // ── iscrizione con tutti i controlli (sesso, tipo, pettorale) ─────
         boolean ok = gara.iscrizione(atleta);
         if (ok) {
             JOptionPane.showMessageDialog(this,
@@ -182,15 +220,13 @@ public class FRM_Atleti extends javax.swing.JFrame {
                     "OK", JOptionPane.INFORMATION_MESSAGE);
             pulisciCampi();
         } else {
-            // Determina il motivo specifico del rifiuto
             String motivoTipo = "";
-            if (gara.getTipoGaraCorsa() != null && !(atleta instanceof Velocisti))
+            if (gara.getTipoGaraCorsa()  != null && !(atleta instanceof Velocisti))
                 motivoTipo = "• Gara di CORSA: accetta solo Velocista / Fondometrista / Ostacolista\n";
-            else if (gara.getTipoGaraSalto() != null && !(atleta instanceof Saltatori))
+            else if (gara.getTipoGaraSalto()  != null && !(atleta instanceof Saltatori))
                 motivoTipo = "• Gara di SALTO: accetta solo Saltatore\n";
             else if (gara.getTipoGaraLancio() != null && !(atleta instanceof Lanciatori))
                 motivoTipo = "• Gara di LANCIO: accetta solo Pesista\n";
-
             errore("Iscrizione fallita.\n"
                     + motivoTipo
                     + "• Numero maglia " + nMaglia + " già usato, oppure\n"
@@ -198,19 +234,13 @@ public class FRM_Atleti extends javax.swing.JFrame {
         }
     }
 
-    // ── Navigazione form ───────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════
+    //  NAVIGAZIONE FORM
+    // ══════════════════════════════════════════════════════════════════════
 
-    /** ◀  Disabilitato: siamo al primo form. */
-    // BTN_Sinistra è disabled in initComponents.
-
-    /** ▶  Apre FRM_Classifica (Form 2) e chiude questo. */
     private void goDestra() {
         new FRM_Classifica().setVisible(true);
         this.dispose();
-    }
-
-    private void aggiornaCursore() {
-        // mantenuto per compatibilità – non più usato per la navigazione
     }
 
     private void pulisciCampi() {
@@ -219,6 +249,7 @@ public class FRM_Atleti extends javax.swing.JFrame {
         TXT_Eta.setText("");
         TXT_NMaglia.setText("");
         TXT_StatisticaUnica.setText("");
+        TXT_Statistica2.setText("");
     }
 
     private void errore(String msg) {
@@ -226,161 +257,148 @@ public class FRM_Atleti extends javax.swing.JFrame {
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  CODICE GENERATO DA NETBEANS  (initComponents)
-    //  Variabili identiche al .form – NON modificare i nomi
+    //  initComponents  –  layout con GroupLayout
     // ══════════════════════════════════════════════════════════════════════
 
     @SuppressWarnings("unchecked")
     private void initComponents() {
 
-        LBL_Nome           = new javax.swing.JLabel();
-        TXT_Nome           = new javax.swing.JTextField();
-        TXT_Sesso          = new javax.swing.JTextField();
-        LBL_Sesso          = new javax.swing.JLabel();
-        TXT_Eta            = new javax.swing.JTextField();
-        LBL_Eta            = new javax.swing.JLabel();
-        LBL_Tipo           = new javax.swing.JLabel();
-        CMB_Tipo           = new javax.swing.JComboBox<>();
-        BTN_Inserisci      = new javax.swing.JButton();
-        BTN_Destra         = new javax.swing.JButton();
-        BTN_Sinistra       = new javax.swing.JButton();
-        LBL_NMaglia        = new javax.swing.JLabel();
-        TXT_NMaglia        = new javax.swing.JTextField();
-        TXT_StatisticaUnica= new javax.swing.JTextField();
-        LBL_StatisticaUnica= new javax.swing.JLabel();
+        // componenti del .form originale
+        LBL_Nome            = new JLabel("Nome");
+        TXT_Nome            = new JTextField();
+        LBL_Sesso           = new JLabel("Sesso");
+        TXT_Sesso           = new JTextField();
+        LBL_Eta             = new JLabel("Età");
+        TXT_Eta             = new JTextField();
+        LBL_NMaglia         = new JLabel("nMaglia");
+        TXT_NMaglia         = new JTextField();
+        LBL_Tipo            = new JLabel("Tipo");
+        CMB_Tipo            = new JComboBox<>();
+        LBL_StatisticaUnica = new JLabel("Statistica Unica");
+        TXT_StatisticaUnica = new JTextField();
+        BTN_Inserisci       = new JButton("Inserisci");
+        BTN_Sinistra        = new JButton("<");
+        BTN_Destra          = new JButton(">");
+
+        // componente aggiunto: seconda statistica (reazione / ostacolo)
+        LBL_Statistica2     = new JLabel("Statistica 2");
+        TXT_Statistica2     = new JTextField();
+        LBL_Statistica2.setVisible(false);
+        TXT_Statistica2.setVisible(false);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Iscrizione Atleti");
 
-        LBL_Nome.setText("Nome");
-        LBL_Sesso.setText("Sesso");
-        LBL_Eta.setText("Età");
-        LBL_Tipo.setText("Tipo");
-        LBL_NMaglia.setText("nMaglia");
-        LBL_StatisticaUnica.setText("Statistica Unica");
-
         CMB_Tipo.setModel(new javax.swing.DefaultComboBoxModel<>(
                 new String[]{"Velocista", "Pesista", "Saltatore", "Fondometrista"}));
-        CMB_Tipo.addActionListener(evt -> CMB_TipoActionPerformed(evt));
+        CMB_Tipo.addActionListener(e -> aggiornaCampiTipo());
 
-        BTN_Inserisci.setText("Inserisci");
-        BTN_Inserisci.addActionListener(evt -> inserisciAtleta());
-
-        BTN_Destra.setText(">");
+        BTN_Inserisci.addActionListener(e -> inserisciAtleta());
         BTN_Destra.setToolTipText("Vai a Classifica Gara (Form 2)");
-        BTN_Destra.addActionListener(evt -> goDestra());
-
-        BTN_Sinistra.setText("<");
-        BTN_Sinistra.setEnabled(false); // primo form, non si può tornare indietro
+        BTN_Destra.addActionListener(e -> goDestra());
+        BTN_Sinistra.setEnabled(false);
         BTN_Sinistra.setToolTipText("Sei già al primo form");
 
-        TXT_NMaglia.addActionListener(evt -> TXT_NMagliaActionPerformed(evt));
+        TXT_NMaglia.addActionListener(e -> {});
 
-        // ── layout (GroupLayout identico al .form) ────────────────────────
+        // ── GroupLayout ───────────────────────────────────────────────────
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
 
+        int LW = 120;  // larghezza colonna label
+        int FW = 120;  // larghezza colonna field
+
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addGap(148, 148, Short.MAX_VALUE)
-                .addComponent(BTN_Sinistra)
-                .addGap(57, 57, 57)
-                .addComponent(BTN_Destra)
-                .addGap(149, 149, 149))
+            // ── riga pulsanti navigazione ────────────────────────────────
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING,
+                layout.createSequentialGroup()
+                    .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(BTN_Sinistra)
+                    .addGap(40)
+                    .addComponent(BTN_Destra)
+                    .addContainerGap())
+            // ── colonne label + field ────────────────────────────────────
             .addGroup(layout.createSequentialGroup()
-                .addGap(46, 46, 46)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(LBL_Nome,            javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(LBL_Sesso,           javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(LBL_Eta,             javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(LBL_Tipo,            javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(LBL_NMaglia)
-                    .addComponent(LBL_StatisticaUnica))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(TXT_Nome,            javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(TXT_Sesso,           javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(CMB_Tipo,            javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addComponent(TXT_NMaglia,     javax.swing.GroupLayout.Alignment.LEADING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(TXT_Eta,         javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 71, Short.MAX_VALUE))
-                    .addComponent(BTN_Inserisci,       javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(TXT_StatisticaUnica, javax.swing.GroupLayout.PREFERRED_SIZE, 72, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(42, 42, 42))
+                .addGap(20)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(LBL_Nome,            0, LW, Short.MAX_VALUE)
+                    .addComponent(LBL_Sesso,           0, LW, Short.MAX_VALUE)
+                    .addComponent(LBL_Eta,             0, LW, Short.MAX_VALUE)
+                    .addComponent(LBL_NMaglia,         0, LW, Short.MAX_VALUE)
+                    .addComponent(LBL_Tipo,            0, LW, Short.MAX_VALUE)
+                    .addComponent(LBL_StatisticaUnica, 0, LW, Short.MAX_VALUE)
+                    .addComponent(LBL_Statistica2,     0, LW, Short.MAX_VALUE))
+                .addGap(12)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(TXT_Nome,            0, FW, Short.MAX_VALUE)
+                    .addComponent(TXT_Sesso,           0, FW, Short.MAX_VALUE)
+                    .addComponent(TXT_Eta,             0, FW, Short.MAX_VALUE)
+                    .addComponent(TXT_NMaglia,         0, FW, Short.MAX_VALUE)
+                    .addComponent(CMB_Tipo,            0, FW, Short.MAX_VALUE)
+                    .addComponent(TXT_StatisticaUnica, 0, FW, Short.MAX_VALUE)
+                    .addComponent(TXT_Statistica2,     0, FW, Short.MAX_VALUE)
+                    .addComponent(BTN_Inserisci,       0, FW, Short.MAX_VALUE))
+                .addGap(20))
         );
 
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(27, 27, 27)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(LBL_Nome)
-                    .addComponent(TXT_Nome, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(LBL_Sesso)
-                            .addComponent(TXT_Sesso, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(LBL_Eta)
-                        .addGap(13, 13, 13)
-                        .addComponent(LBL_NMaglia)
-                        .addGap(12, 12, 12))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(40, 40, 40)
-                        .addComponent(TXT_Eta,         javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(TXT_NMaglia,     javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(6, 6, 6)))
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(LBL_Tipo)
-                        .addGap(6, 6, 6))
-                    .addComponent(CMB_Tipo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(8, 8, 8)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(LBL_StatisticaUnica)
-                    .addComponent(TXT_StatisticaUnica, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGap(18)
+                .addGroup(pair(layout, LBL_Nome,            TXT_Nome))
+                .addGap(8)
+                .addGroup(pair(layout, LBL_Sesso,           TXT_Sesso))
+                .addGap(8)
+                .addGroup(pair(layout, LBL_Eta,             TXT_Eta))
+                .addGap(8)
+                .addGroup(pair(layout, LBL_NMaglia,         TXT_NMaglia))
+                .addGap(8)
+                .addGroup(pair(layout, LBL_Tipo,            CMB_Tipo))
+                .addGap(8)
+                .addGroup(pair(layout, LBL_StatisticaUnica, TXT_StatisticaUnica))
+                .addGap(8)
+                .addGroup(pair(layout, LBL_Statistica2,     TXT_Statistica2))
+                .addGap(12)
                 .addComponent(BTN_Inserisci)
-                .addGap(29, 29, 29)
+                .addGap(18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(BTN_Destra)
-                    .addComponent(BTN_Sinistra))
-                .addGap(15, 15, 15))
+                    .addComponent(BTN_Sinistra)
+                    .addComponent(BTN_Destra))
+                .addGap(12))
         );
 
         pack();
         setLocationRelativeTo(null);
     }
 
-    // ── handler generati dal .form ─────────────────────────────────────────
-
-    private void CMB_TipoActionPerformed(java.awt.event.ActionEvent evt) {
-        aggiornaLabelStatistica();
+    /** Helper: crea un gruppo orizzontale baseline per una coppia label+field. */
+    private javax.swing.GroupLayout.Group pair(javax.swing.GroupLayout l,
+                                               JComponent label, JComponent field) {
+        return l.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addComponent(label)
+                .addComponent(field, javax.swing.GroupLayout.PREFERRED_SIZE,
+                        javax.swing.GroupLayout.DEFAULT_SIZE,
+                        javax.swing.GroupLayout.PREFERRED_SIZE);
     }
 
-    private void TXT_NMagliaActionPerformed(java.awt.event.ActionEvent evt) {
-        // invocato premendo ENTER nel campo nMaglia
-    }
+    // ── variabili (nomi del .form invariati + TXT/LBL_Statistica2 aggiunti) ──
 
-    // ── dichiarazione variabili (stessi nomi del .form) ────────────────────
-
-    private javax.swing.JButton      BTN_Destra;
-    private javax.swing.JButton      BTN_Inserisci;
-    private javax.swing.JButton      BTN_Sinistra;
-    private javax.swing.JComboBox<String> CMB_Tipo;
-    private javax.swing.JLabel       LBL_Eta;
-    private javax.swing.JLabel       LBL_NMaglia;
-    private javax.swing.JLabel       LBL_Nome;
-    private javax.swing.JLabel       LBL_Sesso;
-    private javax.swing.JLabel       LBL_StatisticaUnica;
-    private javax.swing.JLabel       LBL_Tipo;
-    private javax.swing.JTextField   TXT_Eta;
-    private javax.swing.JTextField   TXT_NMaglia;
-    private javax.swing.JTextField   TXT_Nome;
-    private javax.swing.JTextField   TXT_Sesso;
-    private javax.swing.JTextField   TXT_StatisticaUnica;
+    private JButton               BTN_Destra;
+    private JButton               BTN_Inserisci;
+    private JButton               BTN_Sinistra;
+    private JComboBox<String>     CMB_Tipo;
+    private JLabel                LBL_Eta;
+    private JLabel                LBL_NMaglia;
+    private JLabel                LBL_Nome;
+    private JLabel                LBL_Sesso;
+    private JLabel                LBL_Statistica2;       // ← aggiunto
+    private JLabel                LBL_StatisticaUnica;
+    private JLabel                LBL_Tipo;
+    private JTextField            TXT_Eta;
+    private JTextField            TXT_NMaglia;
+    private JTextField            TXT_Nome;
+    private JTextField            TXT_Sesso;
+    private JTextField            TXT_Statistica2;       // ← aggiunto
+    private JTextField            TXT_StatisticaUnica;
 }
