@@ -89,12 +89,22 @@ public class FRM_Gara extends javax.swing.JFrame {
      *   1. Atleti LIBERI filtrati per tipo e sesso, con prefisso [LIBERO]
      *   2. Atleti della gara selezionata (se c'è), filtrati per tipo e sesso
      *
-     * I filtri CMB_TipoGara e RBT_M/F agiscono su ENTRAMBE le sezioni.
-     * Popola anche indiceAtleti per mappare riga → oggetto Atleta.
+     * Se una gara è selezionata i filtri vengono BLOCCATI sui suoi valori
+     * (tipo e categoria sono già noti, non ha senso cambiarli).
+     * Se nessuna gara è selezionata i filtri vengono sbloccati.
      */
     private void aggiornaListaAtleti() {
         modelAtleti.clear();
         indiceAtleti.clear();
+
+        Gara sel = garaSelezionata();
+
+        // ── blocca/sblocca filtri ─────────────────────────────────────────
+        if (sel != null) {
+            bloccaFiltriPerGara(sel);
+        } else {
+            sbloccaFiltri();
+        }
 
         String filtroTipo = (String) CMB_TipoGara.getSelectedItem();
         boolean tuttiTipi = (filtroTipo == null || filtroTipo.isBlank()
@@ -108,13 +118,12 @@ public class FRM_Gara extends javax.swing.JFrame {
         }
 
         // ── separatore visivo (solo se ci sono liberi e c'è anche una gara) ─
-        Gara sel = garaSelezionata();
         if (!indiceAtleti.isEmpty() && sel != null) {
             modelAtleti.addElement("── atleti della gara ──────────────────");
             indiceAtleti.add(null);   // segnaposto: non selezionabile
         }
 
-        // ── 2. Atleti della gara selezionata (filtrati per tipo e sesso) ──
+        // ── 2. Atleti della gara selezionata ──────────────────────────────
         if (sel == null) return;
 
         ArrayList<Atleta> dopoSesso;
@@ -128,6 +137,36 @@ public class FRM_Gara extends javax.swing.JFrame {
                 indiceAtleti.add(a);
             }
         }
+    }
+
+    /**
+     * Blocca i filtri impostandoli sui valori della gara selezionata.
+     *
+     *   Sesso   → forzato sulla categoria della gara (M o F)
+     *   Tipo    → Saltatore per Salto, Pesista per Lancio,
+     *             "Tutti" per Corsa (ha 3 sotto-tipi validi)
+     */
+    private void bloccaFiltriPerGara(Gara g) {
+        // sesso
+        if ("M".equalsIgnoreCase(g.getCategoria())) RBT_M.setSelected(true);
+        else                                         RBT_F.setSelected(true);
+        RBT_M.setEnabled(false);
+        RBT_F.setEnabled(false);
+
+        // tipo
+        if      (g.getTipoGaraSalto()  != null) CMB_TipoGara.setSelectedItem("Saltatore");
+        else if (g.getTipoGaraLancio() != null) CMB_TipoGara.setSelectedItem("Pesista");
+        else                                     CMB_TipoGara.setSelectedItem("Tutti");
+        // per la corsa lasciamo "Tutti" selezionabile: dentro una gara di corsa
+        // possono convivere Velocista / Fondometrista / Ostacolista
+        CMB_TipoGara.setEnabled(g.getTipoGaraCorsa() != null);
+    }
+
+    /** Riabilita tutti i filtri quando nessuna gara è selezionata. */
+    private void sbloccaFiltri() {
+        RBT_M.setEnabled(true);
+        RBT_F.setEnabled(true);
+        CMB_TipoGara.setEnabled(true);
     }
 
     /**
@@ -579,14 +618,22 @@ public class FRM_Gara extends javax.swing.JFrame {
 
     // ── classi interne nominate (evitano FRM_Gara$1 che NetBeans non trova) ──
 
-    /** Gestisce il tasto destro sulla lista gare. */
+    /** Gestisce i click sulla lista gare (sinistro = deseleziona se già selezionata, destro = menu). */
     private class GareMouseHandler extends java.awt.event.MouseAdapter {
         @Override
         public void mousePressed(java.awt.event.MouseEvent e) {
+            int idx = LST_Gare.locationToIndex(e.getPoint());
+
             if (SwingUtilities.isRightMouseButton(e)) {
-                int idx = LST_Gare.locationToIndex(e.getPoint());
                 if (idx >= 0) LST_Gare.setSelectedIndex(idx);
                 mostraMenuGara(e);
+            } else if (SwingUtilities.isLeftMouseButton(e)) {
+                // se il click è sulla riga già selezionata → deseleziona
+                if (idx >= 0 && idx == LST_Gare.getSelectedIndex()) {
+                    LST_Gare.clearSelection();
+                    AppData.getInstance().setGaraCorrente(null);
+                    aggiornaListaAtleti();
+                }
             }
         }
     }

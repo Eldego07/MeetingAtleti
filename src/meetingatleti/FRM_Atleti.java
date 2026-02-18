@@ -111,7 +111,7 @@ public class FRM_Atleti extends javax.swing.JFrame {
         switch (tipo) {
             case "Velocista":
                 LBL_Stat1.setText("Tempo gara (sec):");
-                LBL_Stat2.setText("Tempo reazione (cs):");
+                LBL_Stat2.setText("Tempo reazione (sec, > 0.5):");
                 LBL_Stat2.setVisible(true);
                 TXT_Stat2.setVisible(true);
                 break;
@@ -236,17 +236,20 @@ public class FRM_Atleti extends javax.swing.JFrame {
         switch (tipo) {
             case "Velocista": {
                 double tempo;
-                int    reazione;
+                double reazioneSec;
                 try {
-                    tempo    = Double.parseDouble(TXT_Stat1.getText().trim());
-                    reazione = Integer.parseInt(TXT_Stat2.getText().trim());
+                    tempo       = Double.parseDouble(TXT_Stat1.getText().trim());
+                    reazioneSec = Double.parseDouble(TXT_Stat2.getText().trim());
                 } catch (NumberFormatException ex) {
                     throw new IllegalArgumentException(
-                            "Tempo gara (sec) e Tempo reazione (cs) devono essere numeri validi.");
+                            "Tempo gara (sec) e Tempo reazione (sec) devono essere numeri validi.");
                 }
+                if (reazioneSec <= 0.5) throw new IllegalArgumentException(
+                        "Il tempo di reazione deve essere maggiore di 0.5 secondi.\n"
+                        + "Valore inserito: " + reazioneSec + " sec");
                 Velocisti v = new Velocisti(nome, sesso, eta, pettorale);
                 v.setTempoGara(tempo);
-                v.setTempoReazione(reazione);
+                v.setTempoReazione((int)(reazioneSec * 100)); // converte in centesimi
                 return v;
             }
             case "Ostacolista": {
