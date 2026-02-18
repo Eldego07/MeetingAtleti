@@ -1,7 +1,9 @@
 package meetingatleti;
 
+import java.util.ArrayList;
+
 /**
- * Singleton: mantiene il Meeting attivo e la Gara correntemente selezionata.
+ * Singleton: mantiene il Meeting attivo, la Gara corrente, e gli atleti liberi.
  * Usato dai form per condividere dati senza dipendenze circolari.
  */
 public class AppData {
@@ -10,9 +12,11 @@ public class AppData {
 
     private Meeting meeting;
     private Gara    garaCorrente;
+    private ArrayList<Atleta> atletiLiberi;  // atleti creati senza gara specifica
 
     private AppData() {
-        meeting = new Meeting("Meeting di Atletica", "2026-03-15", "Stadio");
+        meeting       = new Meeting("Meeting di Atletica", "2026-03-15", "Stadio");
+        atletiLiberi  = new ArrayList<>();
     }
 
     public static AppData getInstance() {
@@ -25,4 +29,10 @@ public class AppData {
 
     public Gara    getGaraCorrente()       { return garaCorrente; }
     public void    setGaraCorrente(Gara g) { this.garaCorrente = g; }
+
+    public ArrayList<Atleta> getAtletiLiberi()  { return atletiLiberi; }
+
+    /** Rimuove un atleta dal pool liberi (usato quando viene aggiunto ad una gara). */
+    public boolean rimuoviAtletaLibero(Atleta a) { return atletiLiberi.remove(a); }
+
 }

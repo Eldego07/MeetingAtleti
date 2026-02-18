@@ -1,404 +1,651 @@
 package meetingatleti;
 
-import java.util.logging.Logger;
+import java.util.ArrayList;
 import javax.swing.*;
 
 /**
- * Form 1 di 3 – Inserimento atleti.
+ * Form 1 di 3 – Creazione e iscrizione atleti.
  *
- * Componenti del .form originali (nomi invariati):
- *   LBL_Nome / TXT_Nome
- *   LBL_Sesso / TXT_Sesso
- *   LBL_Eta / TXT_Eta
- *   LBL_NMaglia / TXT_NMaglia          ← pettorale
- *   LBL_Tipo / CMB_Tipo
- *   LBL_StatisticaUnica / TXT_StatisticaUnica  ← tempo gara / distanza
- *   BTN_Inserisci, BTN_Sinistra, BTN_Destra
+ * ═══════════════════════════════════════════════════════════
+ *  LOGICA DEL FORM:
  *
- * Componente AGGIUNTO (non nel .form ma necessario per le interfacce UML):
- *   LBL_Statistica2 / TXT_Statistica2
- *     → visibile solo per Velocista  (tempoReazione  – interfaccia Fondometrista)
- *     → visibile solo per Ostacolista (tempoOstacolo – interfaccia Ostacolista)
- *     → nascosto per Fondometrista, Pesista, Saltatore
+ *  Se AppData.garaCorrente != null:
+ *    → BTN_Aggiungi tenta l'iscrizione alla gara.
+ *      Se fallisce (tipo/sesso/pettorale errato), offre
+ *      di salvare l'atleta come LIBERO.
+ *
+ *  Se AppData.garaCorrente == null:
+ *    → L'atleta viene salvato direttamente in atletiLiberi.
+ *      Potrà essere aggiunto a una gara tramite il menu
+ *      contestuale (tasto destro) in FRM_Gara.
+ *
+ *  CMB_TipoAtleta: Velocista / Fondometrista / Ostacolista /
+ *                  Saltatore / Pesista
+ *    → mostra/nasconde i campi statistici opportuni.
+ *
+ *  Navigazione:
+ *    BTN_Sinistra  →  torna a FRM_Gara   (Form 0)
+ *    BTN_Destra    →  va a FRM_Classifica (Form 2)
+ * ═══════════════════════════════════════════════════════════
  */
 public class FRM_Atleti extends javax.swing.JFrame {
 
-    private static final Logger logger = Logger.getLogger(FRM_Atleti.class.getName());
+    private static final java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(FRM_Atleti.class.getName());
+
+    private final DefaultListModel<String> modelAtleti = new DefaultListModel<>();
+    private final ArrayList<Atleta>        indiceAtleti = new ArrayList<>();
+
+    // ────────────────────────────────────────────────────────────────────────
 
     public FRM_Atleti() {
         initComponents();
-        Gara g = AppData.getInstance().getGaraCorrente();
-        if (g != null)
-            setTitle("Inserimento Atleti  [1/3]  →  " + g.getNomeGara() + "  [" + g.getCategoria() + "]");
-        aggiornaCMBTipo();
-        aggiornaCampiTipo();   // imposta label + visibilità al primo avvio
+
+        CMB_TipoAtleta.setModel(new DefaultComboBoxModel<>(
+                new String[]{"Velocista", "Fondometrista", "Ostacolista", "Saltatore", "Pesista"}));
+        CMB_TipoAtleta.addActionListener(e -> aggiornaCampiExtra());
+
+        LST_Atleti.setModel(modelAtleti);
+        LST_Atleti.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        RBT_M.setSelected(true);
+
+        aggiornaInfoGara();
+        aggiornaCampiExtra();
+        aggiornaLista();
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  POPOLA CMB_Tipo in base al tipo di gara corrente
+    //  LOGICA APPLICATIVA
     // ══════════════════════════════════════════════════════════════════════
 
-    private void aggiornaCMBTipo() {
-        Gara g = AppData.getInstance().getGaraCorrente();
-        CMB_Tipo.removeAllItems();
-        if (g == null) {
-            CMB_Tipo.addItem("Velocista");
-            CMB_Tipo.addItem("Fondometrista");
-            CMB_Tipo.addItem("Ostacolista");
-            CMB_Tipo.addItem("Pesista");
-            CMB_Tipo.addItem("Saltatore");
-        } else if (g.getTipoGaraCorsa() != null) {
-            CMB_Tipo.addItem("Velocista");
-            CMB_Tipo.addItem("Fondometrista");
-            CMB_Tipo.addItem("Ostacolista");
-        } else if (g.getTipoGaraSalto() != null) {
-            CMB_Tipo.addItem("Saltatore");
-        } else if (g.getTipoGaraLancio() != null) {
-            CMB_Tipo.addItem("Pesista");
+    /** Mostra in LBL_InfoGara la gara attiva (o avvisa che non ce n'è una). */
+    private void aggiornaInfoGara() {
+        Gara gara = AppData.getInstance().getGaraCorrente();
+        if (gara != null) {
+            LBL_InfoGara.setText("Gara attiva:  " + gara.getNomeGara()
+                    + "  [" + gara.getCategoria() + "]  –  " + gara.getTipoDescrizione());
+            LBL_InfoGara.setForeground(new java.awt.Color(0, 100, 0));
+        } else {
+            LBL_InfoGara.setText("⚠  Nessuna gara selezionata  –  l'atleta sarà salvato come ATLETA LIBERO");
+            LBL_InfoGara.setForeground(new java.awt.Color(180, 80, 0));
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    //  AGGIORNA LABEL E VISIBILITÀ DEI CAMPI IN BASE AL TIPO
-    // ══════════════════════════════════════════════════════════════════════
+    /** Ricarica LST_Atleti con atleti liberi + atleti della gara corrente. */
+    private void aggiornaLista() {
+        modelAtleti.clear();
+        indiceAtleti.clear();
+
+        for (Atleta a : AppData.getInstance().getAtletiLiberi()) {
+            modelAtleti.addElement("[LIBERO] " + a.toString());
+            indiceAtleti.add(a);
+        }
+
+        Gara gara = AppData.getInstance().getGaraCorrente();
+        if (gara != null) {
+            for (Atleta a : gara.getAtleti()) {
+                modelAtleti.addElement(a.toString());
+                indiceAtleti.add(a);
+            }
+        }
+    }
 
     /**
-     * Chiamato ogni volta che CMB_Tipo cambia.
+     * Mostra/nasconde i campi statistici in base al tipo di atleta scelto.
      *
-     *  Velocista     → TXT_StatisticaUnica = "Tempo gara (s)"
-     *                  TXT_Statistica2     = "T.Reazione (cs)"  VISIBILE
-     *                    (interfaccia Fondometrista – tempoReazione allo sparo)
-     *
-     *  Ostacolista   → TXT_StatisticaUnica = "Tempo gara (s)"
-     *                  TXT_Statistica2     = "T.Ostacolo (cs)"  VISIBILE
-     *                    (interfaccia Ostacolista – penalità per ostacolo abbattuto)
-     *
-     *  Fondometrista → TXT_StatisticaUnica = "Tempo gara (s)"
-     *                  TXT_Statistica2     = NASCOSTO
-     *
-     *  Pesista       → TXT_StatisticaUnica = "Lancio (cm)"
-     *                  TXT_Statistica2     = NASCOSTO
-     *
-     *  Saltatore     → TXT_StatisticaUnica = "Salto (cm)"
-     *                  TXT_Statistica2     = NASCOSTO
+     *   Velocista    → TXT_Stat1 = tempoGara (sec)   | TXT_Stat2 = tempoReazione (cs)
+     *   Fondometrista→ TXT_Stat1 = tempoGara (sec)   | TXT_Stat2 nascosto
+     *   Ostacolista  → TXT_Stat1 = tempoGara (sec)   | TXT_Stat2 = penalità ostacoli (cs)
+     *   Saltatore    → TXT_Stat1 = distanzaSalto (cm)| TXT_Stat2 nascosto
+     *   Pesista      → TXT_Stat1 = distanzaLancio(cm)| TXT_Stat2 nascosto
      */
-    private void aggiornaCampiTipo() {
-        String tipo = (String) CMB_Tipo.getSelectedItem();
+    private void aggiornaCampiExtra() {
+        String tipo = (String) CMB_TipoAtleta.getSelectedItem();
         if (tipo == null) return;
+
+        // reset visibilità
+        LBL_Stat2.setVisible(false);
+        TXT_Stat2.setVisible(false);
+        TXT_Stat1.setEnabled(true);
 
         switch (tipo) {
             case "Velocista":
-                LBL_StatisticaUnica.setText("Tempo gara (s):");
-                LBL_Statistica2.setText("T.Reazione (cs):");
-                LBL_Statistica2.setVisible(true);
-                TXT_Statistica2.setVisible(true);
-                TXT_Statistica2.setText("15");   // default: 15cs = 0.15s (reazione tipica)
+                LBL_Stat1.setText("Tempo gara (sec):");
+                LBL_Stat2.setText("Tempo reazione (cs):");
+                LBL_Stat2.setVisible(true);
+                TXT_Stat2.setVisible(true);
                 break;
             case "Ostacolista":
-                LBL_StatisticaUnica.setText("Tempo gara (s):");
-                LBL_Statistica2.setText("T.Ostacolo (cs):");
-                LBL_Statistica2.setVisible(true);
-                TXT_Statistica2.setVisible(true);
-                TXT_Statistica2.setText("0");    // default: 0 ostacoli abbattuti
+                LBL_Stat1.setText("Tempo gara (sec):");
+                LBL_Stat2.setText("Penalità ostacoli (cs):");
+                LBL_Stat2.setVisible(true);
+                TXT_Stat2.setVisible(true);
                 break;
             case "Fondometrista":
-                LBL_StatisticaUnica.setText("Tempo gara (s):");
-                LBL_Statistica2.setVisible(false);
-                TXT_Statistica2.setVisible(false);
-                TXT_Statistica2.setText("0");
-                break;
-            case "Pesista":
-                LBL_StatisticaUnica.setText("Lancio (cm):");
-                LBL_Statistica2.setVisible(false);
-                TXT_Statistica2.setVisible(false);
-                TXT_Statistica2.setText("0");
+                LBL_Stat1.setText("Tempo gara (sec):");
                 break;
             case "Saltatore":
-                LBL_StatisticaUnica.setText("Salto (cm):");
-                LBL_Statistica2.setVisible(false);
-                TXT_Statistica2.setVisible(false);
-                TXT_Statistica2.setText("0");
+                LBL_Stat1.setText("Distanza salto (cm):");
+                break;
+            case "Pesista":
+                LBL_Stat1.setText("Distanza lancio (cm):");
                 break;
         }
-        pack();  // ridimensiona la finestra quando i campi appaiono/scompaiono
+
+        TXT_Stat1.setText("");
+        TXT_Stat2.setText("");
+        revalidate();
+        repaint();
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    //  INSERIMENTO ATLETA
-    // ══════════════════════════════════════════════════════════════════════
+    /** Legge i campi, crea l'atleta e lo iscrive alla gara (o lo salva come libero). */
+    private void aggiungiAtleta() {
+        // ── validazione base ──────────────────────────────────────────────
+        String nome        = TXT_Nome.getText().trim();
+        String sesso       = RBT_M.isSelected() ? "M" : "F";
+        String etaStr      = TXT_Eta.getText().trim();
+        String pettStr     = TXT_Pettorale.getText().trim();
+        String tipo        = (String) CMB_TipoAtleta.getSelectedItem();
 
-    private void inserisciAtleta() {
-        Gara gara = AppData.getInstance().getGaraCorrente();
-        if (gara == null) { errore("Nessuna gara selezionata!\nTorna su FRM_Gara e seleziona una gara."); return; }
+        if (nome.isEmpty() || etaStr.isEmpty() || pettStr.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Compila tutti i campi obbligatori: Nome, Età, Pettorale.",
+                    "Dati incompleti", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-        String nome  = TXT_Nome.getText().trim();
-        String sesso = TXT_Sesso.getText().trim().toUpperCase();
-        String tipo  = (String) CMB_Tipo.getSelectedItem();
-
-        if (nome.isEmpty()) { errore("Inserisci il nome."); return; }
-        if (!sesso.equals("M") && !sesso.equals("F")) { errore("Sesso: M oppure F."); return; }
-
-        int eta, nMaglia;
-        try { eta = Integer.parseInt(TXT_Eta.getText().trim()); }
-        catch (NumberFormatException e) { errore("Età non valida."); return; }
-
-        try { nMaglia = Integer.parseInt(TXT_NMaglia.getText().trim()); }
-        catch (NumberFormatException e) { errore("Numero maglia non valido."); return; }
-
-        // ── statistica principale (tempo gara o distanza) ─────────────────
-        int statistica;
+        int eta, pettorale;
         try {
-            statistica = Integer.parseInt(TXT_StatisticaUnica.getText().trim());
-            if (statistica <= 0) throw new NumberFormatException();
-        } catch (NumberFormatException e) {
-            errore(LBL_StatisticaUnica.getText() + " non valida (numero intero > 0)."); return;
+            eta       = Integer.parseInt(etaStr);
+            pettorale = Integer.parseInt(pettStr);
+            if (eta <= 0 || pettorale <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Età e Pettorale devono essere numeri interi positivi.",
+                    "Errore input", JOptionPane.WARNING_MESSAGE);
+            return;
         }
 
-        // ── statistica secondaria (reazione / penalità ostacolo) ──────────
-        int statistica2 = 0;
-        if (TXT_Statistica2.isVisible()) {
-            try {
-                statistica2 = Integer.parseInt(TXT_Statistica2.getText().trim());
-                if (statistica2 < 0) throw new NumberFormatException();
-            } catch (NumberFormatException e) {
-                errore(LBL_Statistica2.getText() + " non valida (numero intero ≥ 0)."); return;
-            }
-        }
-
-        // ── crea l'atleta del tipo corretto ───────────────────────────────
+        // ── costruzione atleta per tipo ───────────────────────────────────
         Atleta atleta;
+        try {
+            atleta = costruisciAtleta(tipo, nome, sesso, eta, pettorale);
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                    "Errore statistiche", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // ── iscrizione o atleta libero ────────────────────────────────────
+        Gara gara = AppData.getInstance().getGaraCorrente();
+
+        if (gara != null) {
+            boolean ok = gara.iscrizione(atleta);
+            if (ok) {
+                JOptionPane.showMessageDialog(this,
+                        "✔  Atleta aggiunto alla gara con successo!\n" + atleta,
+                        "Iscrizione OK", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                // iscrizione fallita → offri di salvarlo come libero
+                String motivoTipo = "";
+                if (gara.getTipoGaraCorsa()  != null && !(atleta instanceof Velocisti))
+                    motivoTipo = "• Gara di CORSA: accetta solo Velocista / Fondometrista / Ostacolista\n";
+                else if (gara.getTipoGaraSalto()  != null && !(atleta instanceof Saltatori))
+                    motivoTipo = "• Gara di SALTO: accetta solo Saltatore\n";
+                else if (gara.getTipoGaraLancio() != null && !(atleta instanceof Lanciatori))
+                    motivoTipo = "• Gara di LANCIO: accetta solo Pesista\n";
+
+                int risposta = JOptionPane.showConfirmDialog(this,
+                        "Impossibile iscrivere l'atleta alla gara:\n"
+                        + motivoTipo
+                        + "• Pettorale " + pettorale + " già in uso, oppure\n"
+                        + "• Sesso '" + sesso + "' ≠ categoria '" + gara.getCategoria() + "'\n\n"
+                        + "Salvarlo come ATLETA LIBERO (potrà essere aggiunto in seguito)?",
+                        "Iscrizione fallita", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+                if (risposta == JOptionPane.YES_OPTION) {
+                    AppData.getInstance().getAtletiLiberi().add(atleta);
+                    JOptionPane.showMessageDialog(this,
+                            "✔  Atleta salvato come LIBERO.\n"
+                            + "Aggiungilo a una gara da FRM_Gara (tasto destro → Aggiungi a gara).",
+                            "Atleta libero", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    return; // annullato
+                }
+            }
+        } else {
+            // Nessuna gara attiva → libero direttamente
+            AppData.getInstance().getAtletiLiberi().add(atleta);
+            JOptionPane.showMessageDialog(this,
+                    "✔  Atleta salvato come ATLETA LIBERO.\n"
+                    + "Seleziona una gara in FRM_Gara e aggiungilo con tasto destro.",
+                    "Atleta libero", JOptionPane.INFORMATION_MESSAGE);
+        }
+
+        pulisciCampi();
+        aggiornaLista();
+    }
+
+    /**
+     * Crea l'oggetto Atleta corretto in base al tipo selezionato.
+     * Lancia IllegalArgumentException se i valori statistici non sono validi.
+     */
+    private Atleta costruisciAtleta(String tipo, String nome, String sesso,
+                                    int eta, int pettorale)
+            throws IllegalArgumentException {
         switch (tipo) {
             case "Velocista": {
-                // usa interfaccia Fondometrista → setTempoReazione()
-                Velocisti v = new Velocisti(nome, sesso, eta, nMaglia);
-                v.setTempoGara((double) statistica);
-                v.setTempoReazione(statistica2);   // ← da TXT_Statistica2
-                v.setTempoOstacolo(0);
-                atleta = v;
-                break;
+                double tempo;
+                int    reazione;
+                try {
+                    tempo    = Double.parseDouble(TXT_Stat1.getText().trim());
+                    reazione = Integer.parseInt(TXT_Stat2.getText().trim());
+                } catch (NumberFormatException ex) {
+                    throw new IllegalArgumentException(
+                            "Tempo gara (sec) e Tempo reazione (cs) devono essere numeri validi.");
+                }
+                Velocisti v = new Velocisti(nome, sesso, eta, pettorale);
+                v.setTempoGara(tempo);
+                v.setTempoReazione(reazione);
+                return v;
             }
             case "Ostacolista": {
-                // usa interfaccia Ostacolista → setTempoOstacolo()
-                Velocisti o = new Velocisti(nome, sesso, eta, nMaglia);
-                o.setTempoGara((double) statistica);
-                o.setTempoReazione(0);
-                o.setTempoOstacolo(statistica2);   // ← da TXT_Statistica2
-                atleta = o;
-                break;
+                double tempo;
+                int    penalita;
+                try {
+                    tempo    = Double.parseDouble(TXT_Stat1.getText().trim());
+                    penalita = Integer.parseInt(TXT_Stat2.getText().trim());
+                } catch (NumberFormatException ex) {
+                    throw new IllegalArgumentException(
+                            "Tempo gara (sec) e Penalità ostacoli (cs) devono essere numeri validi.");
+                }
+                Velocisti v = new Velocisti(nome, sesso, eta, pettorale);
+                v.setTempoGara(tempo);
+                v.setTempoOstacolo(penalita);
+                return v;
             }
             case "Fondometrista": {
-                Velocisti f = new Velocisti(nome, sesso, eta, nMaglia);
-                f.setTempoGara((double) statistica);
-                f.setTempoReazione(0);
-                f.setTempoOstacolo(0);
-                atleta = f;
-                break;
-            }
-            case "Pesista": {
-                // usa interfaccia ILanciatore → setDistanzaLancio()
-                Lanciatori l = new Lanciatori(nome, sesso, eta, nMaglia);
-                l.setDistanzaLancio(statistica);
-                atleta = l;
-                break;
+                double tempo;
+                try {
+                    tempo = Double.parseDouble(TXT_Stat1.getText().trim());
+                } catch (NumberFormatException ex) {
+                    throw new IllegalArgumentException(
+                            "Tempo gara deve essere un numero decimale (es. 210.5).");
+                }
+                Velocisti v = new Velocisti(nome, sesso, eta, pettorale);
+                v.setTempoGara(tempo);
+                // tempoReazione e tempoOstacolo restano null → isFondometrista() == true
+                return v;
             }
             case "Saltatore": {
-                // usa interfaccia ISaltatore → setDistanzaSalto()
-                Saltatori s = new Saltatori(nome, sesso, eta, nMaglia);
-                s.setDistanzaSalto(statistica);
-                atleta = s;
-                break;
+                int distanza;
+                try {
+                    distanza = Integer.parseInt(TXT_Stat1.getText().trim());
+                } catch (NumberFormatException ex) {
+                    throw new IllegalArgumentException(
+                            "Distanza salto deve essere un numero intero (cm).");
+                }
+                Saltatori s = new Saltatori(nome, sesso, eta, pettorale);
+                s.setDistanzaSalto(distanza);
+                return s;
+            }
+            case "Pesista": {
+                int distanza;
+                try {
+                    distanza = Integer.parseInt(TXT_Stat1.getText().trim());
+                } catch (NumberFormatException ex) {
+                    throw new IllegalArgumentException(
+                            "Distanza lancio deve essere un numero intero (cm).");
+                }
+                Lanciatori l = new Lanciatori(nome, sesso, eta, pettorale);
+                l.setDistanzaLancio(distanza);
+                return l;
             }
             default:
-                errore("Tipo atleta non riconosciuto."); return;
-        }
-
-        // ── iscrizione con tutti i controlli (sesso, tipo, pettorale) ─────
-        boolean ok = gara.iscrizione(atleta);
-        if (ok) {
-            JOptionPane.showMessageDialog(this,
-                    "✔  Iscritto con successo!\n" + atleta,
-                    "OK", JOptionPane.INFORMATION_MESSAGE);
-            pulisciCampi();
-        } else {
-            String motivoTipo = "";
-            if (gara.getTipoGaraCorsa()  != null && !(atleta instanceof Velocisti))
-                motivoTipo = "• Gara di CORSA: accetta solo Velocista / Fondometrista / Ostacolista\n";
-            else if (gara.getTipoGaraSalto()  != null && !(atleta instanceof Saltatori))
-                motivoTipo = "• Gara di SALTO: accetta solo Saltatore\n";
-            else if (gara.getTipoGaraLancio() != null && !(atleta instanceof Lanciatori))
-                motivoTipo = "• Gara di LANCIO: accetta solo Pesista\n";
-            errore("Iscrizione fallita.\n"
-                    + motivoTipo
-                    + "• Numero maglia " + nMaglia + " già usato, oppure\n"
-                    + "• Sesso '" + sesso + "' ≠ categoria '" + gara.getCategoria() + "'");
+                throw new IllegalArgumentException("Tipo atleta non riconosciuto: " + tipo);
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    //  NAVIGAZIONE FORM
-    // ══════════════════════════════════════════════════════════════════════
+    /** Svuota tutti i campi di input dopo un inserimento riuscito. */
+    private void pulisciCampi() {
+        TXT_Nome.setText("");
+        TXT_Eta.setText("");
+        TXT_Pettorale.setText("");
+        TXT_Stat1.setText("");
+        TXT_Stat2.setText("");
+        RBT_M.setSelected(true);
+    }
 
+    // ── Navigazione ────────────────────────────────────────────────────────
+
+    /** ◀  Torna a FRM_Gara (Form 0). */
+    private void goSinistra() {
+        new FRM_Gara().setVisible(true);
+        this.dispose();
+    }
+
+    /** ▶  Va a FRM_Classifica (Form 2). */
     private void goDestra() {
         new FRM_Classifica().setVisible(true);
         this.dispose();
     }
 
-    private void pulisciCampi() {
-        TXT_Nome.setText("");
-        TXT_Sesso.setText("");
-        TXT_Eta.setText("");
-        TXT_NMaglia.setText("");
-        TXT_StatisticaUnica.setText("");
-        TXT_Statistica2.setText("");
-    }
-
-    private void errore(String msg) {
-        JOptionPane.showMessageDialog(this, msg, "Errore", JOptionPane.ERROR_MESSAGE);
-    }
-
     // ══════════════════════════════════════════════════════════════════════
-    //  initComponents  –  layout con GroupLayout
+    //  INIT COMPONENTS
     // ══════════════════════════════════════════════════════════════════════
 
     @SuppressWarnings("unchecked")
     private void initComponents() {
 
-        // componenti del .form originale
-        LBL_Nome            = new JLabel("Nome");
-        TXT_Nome            = new JTextField();
-        LBL_Sesso           = new JLabel("Sesso");
-        TXT_Sesso           = new JTextField();
-        LBL_Eta             = new JLabel("Età");
-        TXT_Eta             = new JTextField();
-        LBL_NMaglia         = new JLabel("nMaglia");
-        TXT_NMaglia         = new JTextField();
-        LBL_Tipo            = new JLabel("Tipo");
-        CMB_Tipo            = new JComboBox<>();
-        LBL_StatisticaUnica = new JLabel("Statistica Unica");
-        TXT_StatisticaUnica = new JTextField();
-        BTN_Inserisci       = new JButton("Inserisci");
-        BTN_Sinistra        = new JButton("<");
-        BTN_Destra          = new JButton(">");
+        ButtonGroup grpSesso = new ButtonGroup();
 
-        // componente aggiunto: seconda statistica (reazione / ostacolo)
-        LBL_Statistica2     = new JLabel("Statistica 2");
-        TXT_Statistica2     = new JTextField();
-        LBL_Statistica2.setVisible(false);
-        TXT_Statistica2.setVisible(false);
+        LBL_InfoGara   = new javax.swing.JLabel();
+        LBL_Nome       = new javax.swing.JLabel();
+        TXT_Nome       = new javax.swing.JTextField();
+        LBL_Sesso      = new javax.swing.JLabel();
+        RBT_M          = new javax.swing.JRadioButton();
+        RBT_F          = new javax.swing.JRadioButton();
+        LBL_Eta        = new javax.swing.JLabel();
+        TXT_Eta        = new javax.swing.JTextField();
+        LBL_Pettorale  = new javax.swing.JLabel();
+        TXT_Pettorale  = new javax.swing.JTextField();
+        LBL_Tipo       = new javax.swing.JLabel();
+        CMB_TipoAtleta = new javax.swing.JComboBox<>();
+        LBL_Stat1      = new javax.swing.JLabel();
+        TXT_Stat1      = new javax.swing.JTextField();
+        LBL_Stat2      = new javax.swing.JLabel();
+        TXT_Stat2      = new javax.swing.JTextField();
+        BTN_Aggiungi   = new javax.swing.JButton();
+        jSeparator1    = new javax.swing.JSeparator();
+        jScrollPane1   = new javax.swing.JScrollPane();
+        LST_Atleti     = new javax.swing.JList<>();
+        BTN_Sinistra   = new javax.swing.JButton();
+        BTN_Destra     = new javax.swing.JButton();
+        LBL_Form       = new javax.swing.JLabel();
+        LBL_ListaTitolo = new javax.swing.JLabel();
 
+        // ── finestra ──────────────────────────────────────────────────────
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle("Iscrizione Atleti");
+        setTitle("Inserimento Atleti  [1 / 3]");
 
-        CMB_Tipo.setModel(new javax.swing.DefaultComboBoxModel<>(
-                new String[]{"Velocista", "Pesista", "Saltatore", "Fondometrista"}));
-        CMB_Tipo.addActionListener(e -> aggiornaCampiTipo());
+        // ── info gara ─────────────────────────────────────────────────────
+        LBL_InfoGara.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 12));
+        LBL_InfoGara.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        LBL_InfoGara.setText("...");
 
-        BTN_Inserisci.addActionListener(e -> inserisciAtleta());
+        // ── nome ──────────────────────────────────────────────────────────
+        LBL_Nome.setText("Nome:");
+        TXT_Nome.setColumns(18);
+
+        // ── sesso ─────────────────────────────────────────────────────────
+        LBL_Sesso.setText("Sesso:");
+        grpSesso.add(RBT_M);
+        RBT_M.setText("M");
+        grpSesso.add(RBT_F);
+        RBT_F.setText("F");
+
+        // ── eta ───────────────────────────────────────────────────────────
+        LBL_Eta.setText("Età:");
+        TXT_Eta.setColumns(5);
+
+        // ── pettorale ─────────────────────────────────────────────────────
+        LBL_Pettorale.setText("Pettorale:");
+        TXT_Pettorale.setColumns(5);
+
+        // ── tipo atleta ───────────────────────────────────────────────────
+        LBL_Tipo.setText("Tipo atleta:");
+
+        // ── stat 1 ────────────────────────────────────────────────────────
+        LBL_Stat1.setText("Statistica 1:");
+        TXT_Stat1.setColumns(10);
+
+        // ── stat 2 ────────────────────────────────────────────────────────
+        LBL_Stat2.setText("Statistica 2:");
+        TXT_Stat2.setColumns(10);
+
+        // ── pulsante aggiungi ─────────────────────────────────────────────
+        BTN_Aggiungi.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 13));
+        BTN_Aggiungi.setText("➕  Aggiungi atleta");
+        BTN_Aggiungi.setToolTipText("Iscrive l'atleta alla gara oppure lo salva come Libero");
+        BTN_Aggiungi.addActionListener(e -> aggiungiAtleta());
+
+        // ── separatore ────────────────────────────────────────────────────
+        jSeparator1.setOrientation(javax.swing.SwingConstants.HORIZONTAL);
+
+        // ── lista atleti ──────────────────────────────────────────────────
+        LBL_ListaTitolo.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 11));
+        LBL_ListaTitolo.setText("Atleti inseriti (gara corrente + liberi):");
+
+        LST_Atleti.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 11));
+        jScrollPane1.setViewportView(LST_Atleti);
+
+        // ── navigazione ───────────────────────────────────────────────────
+        BTN_Sinistra.setText("<");
+        BTN_Sinistra.setToolTipText("Torna a Gestione Gare (Form 0)");
+        BTN_Sinistra.addActionListener(e -> goSinistra());
+
+        BTN_Destra.setText(">");
         BTN_Destra.setToolTipText("Vai a Classifica Gara (Form 2)");
         BTN_Destra.addActionListener(e -> goDestra());
-        BTN_Sinistra.setEnabled(false);
-        BTN_Sinistra.setToolTipText("Sei già al primo form");
 
-        TXT_NMaglia.addActionListener(e -> {});
+        LBL_Form.setText("1 / 3");
+        LBL_Form.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
 
-        // ── GroupLayout ───────────────────────────────────────────────────
+        // ── layout ────────────────────────────────────────────────────────
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
 
-        int LW = 120;  // larghezza colonna label
-        int FW = 120;  // larghezza colonna field
-
+        // ── horizontal ────────────────────────────────────────────────────
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            // ── riga pulsanti navigazione ────────────────────────────────
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING,
-                layout.createSequentialGroup()
-                    .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(BTN_Sinistra)
-                    .addGap(40)
-                    .addComponent(BTN_Destra)
-                    .addContainerGap())
-            // ── colonne label + field ────────────────────────────────────
             .addGroup(layout.createSequentialGroup()
-                .addGap(20)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(LBL_Nome,            0, LW, Short.MAX_VALUE)
-                    .addComponent(LBL_Sesso,           0, LW, Short.MAX_VALUE)
-                    .addComponent(LBL_Eta,             0, LW, Short.MAX_VALUE)
-                    .addComponent(LBL_NMaglia,         0, LW, Short.MAX_VALUE)
-                    .addComponent(LBL_Tipo,            0, LW, Short.MAX_VALUE)
-                    .addComponent(LBL_StatisticaUnica, 0, LW, Short.MAX_VALUE)
-                    .addComponent(LBL_Statistica2,     0, LW, Short.MAX_VALUE))
-                .addGap(12)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(TXT_Nome,            0, FW, Short.MAX_VALUE)
-                    .addComponent(TXT_Sesso,           0, FW, Short.MAX_VALUE)
-                    .addComponent(TXT_Eta,             0, FW, Short.MAX_VALUE)
-                    .addComponent(TXT_NMaglia,         0, FW, Short.MAX_VALUE)
-                    .addComponent(CMB_Tipo,            0, FW, Short.MAX_VALUE)
-                    .addComponent(TXT_StatisticaUnica, 0, FW, Short.MAX_VALUE)
-                    .addComponent(TXT_Statistica2,     0, FW, Short.MAX_VALUE)
-                    .addComponent(BTN_Inserisci,       0, FW, Short.MAX_VALUE))
-                .addGap(20))
+                .addContainerGap(20, 20)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+
+                    // info gara (larghezza piena)
+                    .addComponent(LBL_InfoGara,
+                            javax.swing.GroupLayout.DEFAULT_SIZE, 500, Short.MAX_VALUE)
+
+                    // riga: Nome
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(LBL_Nome, 80, 80, 80)
+                        .addGap(6)
+                        .addComponent(TXT_Nome,
+                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                javax.swing.GroupLayout.PREFERRED_SIZE))
+
+                    // riga: Sesso
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(LBL_Sesso, 80, 80, 80)
+                        .addGap(6)
+                        .addComponent(RBT_M)
+                        .addGap(10)
+                        .addComponent(RBT_F))
+
+                    // riga: Età + Pettorale
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(LBL_Eta, 80, 80, 80)
+                        .addGap(6)
+                        .addComponent(TXT_Eta,
+                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(20)
+                        .addComponent(LBL_Pettorale)
+                        .addGap(6)
+                        .addComponent(TXT_Pettorale,
+                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                javax.swing.GroupLayout.PREFERRED_SIZE))
+
+                    // riga: Tipo atleta
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(LBL_Tipo, 80, 80, 80)
+                        .addGap(6)
+                        .addComponent(CMB_TipoAtleta,
+                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                javax.swing.GroupLayout.PREFERRED_SIZE))
+
+                    // riga: Stat1
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(LBL_Stat1, 130, 130, 130)
+                        .addGap(6)
+                        .addComponent(TXT_Stat1,
+                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                javax.swing.GroupLayout.PREFERRED_SIZE))
+
+                    // riga: Stat2 (visibile solo per Velocista e Ostacolista)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(LBL_Stat2, 130, 130, 130)
+                        .addGap(6)
+                        .addComponent(TXT_Stat2,
+                                javax.swing.GroupLayout.PREFERRED_SIZE,
+                                javax.swing.GroupLayout.DEFAULT_SIZE,
+                                javax.swing.GroupLayout.PREFERRED_SIZE))
+
+                    // pulsante aggiungi
+                    .addComponent(BTN_Aggiungi)
+
+                    // separatore
+                    .addComponent(jSeparator1,
+                            javax.swing.GroupLayout.DEFAULT_SIZE, 500, Short.MAX_VALUE)
+
+                    // titolo lista
+                    .addComponent(LBL_ListaTitolo)
+
+                    // lista (larghezza piena)
+                    .addComponent(jScrollPane1,
+                            javax.swing.GroupLayout.DEFAULT_SIZE, 500, Short.MAX_VALUE)
+
+                    // navigazione
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(BTN_Sinistra)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED,
+                                javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(LBL_Form, 40, 40, 40)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED,
+                                javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(BTN_Destra)))
+
+                .addContainerGap(20, 20))
         );
 
+        // ── vertical ──────────────────────────────────────────────────────
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(18)
-                .addGroup(pair(layout, LBL_Nome,            TXT_Nome))
+                .addContainerGap(12, 12)
+                .addComponent(LBL_InfoGara)
+                .addGap(14)
+
+                // Nome
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(LBL_Nome)
+                    .addComponent(TXT_Nome, javax.swing.GroupLayout.PREFERRED_SIZE,
+                            javax.swing.GroupLayout.DEFAULT_SIZE,
+                            javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(8)
-                .addGroup(pair(layout, LBL_Sesso,           TXT_Sesso))
+
+                // Sesso
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(LBL_Sesso)
+                    .addComponent(RBT_M)
+                    .addComponent(RBT_F))
                 .addGap(8)
-                .addGroup(pair(layout, LBL_Eta,             TXT_Eta))
+
+                // Età + Pettorale
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(LBL_Eta)
+                    .addComponent(TXT_Eta, javax.swing.GroupLayout.PREFERRED_SIZE,
+                            javax.swing.GroupLayout.DEFAULT_SIZE,
+                            javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(LBL_Pettorale)
+                    .addComponent(TXT_Pettorale, javax.swing.GroupLayout.PREFERRED_SIZE,
+                            javax.swing.GroupLayout.DEFAULT_SIZE,
+                            javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(8)
-                .addGroup(pair(layout, LBL_NMaglia,         TXT_NMaglia))
+
+                // Tipo atleta
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(LBL_Tipo)
+                    .addComponent(CMB_TipoAtleta, javax.swing.GroupLayout.PREFERRED_SIZE,
+                            javax.swing.GroupLayout.DEFAULT_SIZE,
+                            javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(8)
-                .addGroup(pair(layout, LBL_Tipo,            CMB_Tipo))
+
+                // Stat1
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(LBL_Stat1)
+                    .addComponent(TXT_Stat1, javax.swing.GroupLayout.PREFERRED_SIZE,
+                            javax.swing.GroupLayout.DEFAULT_SIZE,
+                            javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(6)
+
+                // Stat2 (può essere nascosta)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(LBL_Stat2)
+                    .addComponent(TXT_Stat2, javax.swing.GroupLayout.PREFERRED_SIZE,
+                            javax.swing.GroupLayout.DEFAULT_SIZE,
+                            javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(14)
+
+                // pulsante
+                .addComponent(BTN_Aggiungi)
+                .addGap(14)
+
+                // separatore
+                .addComponent(jSeparator1,
+                        javax.swing.GroupLayout.PREFERRED_SIZE, 6, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(8)
-                .addGroup(pair(layout, LBL_StatisticaUnica, TXT_StatisticaUnica))
-                .addGap(8)
-                .addGroup(pair(layout, LBL_Statistica2,     TXT_Statistica2))
-                .addGap(12)
-                .addComponent(BTN_Inserisci)
-                .addGap(18)
+
+                // titolo lista
+                .addComponent(LBL_ListaTitolo)
+                .addGap(6)
+
+                // lista atleti
+                .addComponent(jScrollPane1,
+                        javax.swing.GroupLayout.DEFAULT_SIZE, 160, Short.MAX_VALUE)
+                .addGap(10)
+
+                // navigazione
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(BTN_Sinistra)
+                    .addComponent(LBL_Form)
                     .addComponent(BTN_Destra))
-                .addGap(12))
+                .addContainerGap(12, 12))
         );
 
         pack();
+        setMinimumSize(new java.awt.Dimension(560, 560));
         setLocationRelativeTo(null);
     }
 
-    /** Helper: crea un gruppo orizzontale baseline per una coppia label+field. */
-    private javax.swing.GroupLayout.Group pair(javax.swing.GroupLayout l,
-                                               JComponent label, JComponent field) {
-        return l.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                .addComponent(label)
-                .addComponent(field, javax.swing.GroupLayout.PREFERRED_SIZE,
-                        javax.swing.GroupLayout.DEFAULT_SIZE,
-                        javax.swing.GroupLayout.PREFERRED_SIZE);
-    }
-
-    // ── variabili (nomi del .form invariati + TXT/LBL_Statistica2 aggiunti) ──
-
-    private JButton               BTN_Destra;
-    private JButton               BTN_Inserisci;
-    private JButton               BTN_Sinistra;
-    private JComboBox<String>     CMB_Tipo;
-    private JLabel                LBL_Eta;
-    private JLabel                LBL_NMaglia;
-    private JLabel                LBL_Nome;
-    private JLabel                LBL_Sesso;
-    private JLabel                LBL_Statistica2;       // ← aggiunto
-    private JLabel                LBL_StatisticaUnica;
-    private JLabel                LBL_Tipo;
-    private JTextField            TXT_Eta;
-    private JTextField            TXT_NMaglia;
-    private JTextField            TXT_Nome;
-    private JTextField            TXT_Sesso;
-    private JTextField            TXT_Statistica2;       // ← aggiunto
-    private JTextField            TXT_StatisticaUnica;
+    // ── variabili ─────────────────────────────────────────────────────────
+    private javax.swing.JButton              BTN_Aggiungi;
+    private javax.swing.JButton              BTN_Sinistra;
+    private javax.swing.JButton              BTN_Destra;
+    private javax.swing.JComboBox<String>    CMB_TipoAtleta;
+    private javax.swing.JLabel               LBL_InfoGara;
+    private javax.swing.JLabel               LBL_Nome;
+    private javax.swing.JLabel               LBL_Sesso;
+    private javax.swing.JLabel               LBL_Eta;
+    private javax.swing.JLabel               LBL_Pettorale;
+    private javax.swing.JLabel               LBL_Tipo;
+    private javax.swing.JLabel               LBL_Stat1;
+    private javax.swing.JLabel               LBL_Stat2;
+    private javax.swing.JLabel               LBL_Form;
+    private javax.swing.JLabel               LBL_ListaTitolo;
+    private javax.swing.JRadioButton         RBT_M;
+    private javax.swing.JRadioButton         RBT_F;
+    private javax.swing.JTextField           TXT_Nome;
+    private javax.swing.JTextField           TXT_Eta;
+    private javax.swing.JTextField           TXT_Pettorale;
+    private javax.swing.JTextField           TXT_Stat1;
+    private javax.swing.JTextField           TXT_Stat2;
+    private javax.swing.JList<String>        LST_Atleti;
+    private javax.swing.JScrollPane          jScrollPane1;
+    private javax.swing.JSeparator           jSeparator1;
 }

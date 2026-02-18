@@ -35,8 +35,9 @@ public class FRM_Gara extends javax.swing.JFrame {
     private final DefaultListModel<String> modelGare   = new DefaultListModel<>();
     private final DefaultListModel<String> modelAtleti = new DefaultListModel<>();
 
-    // mappa indice riga → oggetto Gara reale
-    private final ArrayList<Gara> indiceGare = new ArrayList<>();
+    // mappa indice riga → oggetto reale
+    private final ArrayList<Gara>   indiceGare   = new ArrayList<>();
+    private final ArrayList<Atleta> indiceAtleti = new ArrayList<>();  // per mappare LST_Atleti
 
     // ────────────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,9 @@ public class FRM_Gara extends javax.swing.JFrame {
         // tasto destro su LST_Gare → menu contestuale "Nuova Gara"
         LST_Gare.addMouseListener(new GareMouseHandler());
 
+        // tasto destro su LST_Atleti → menu contestuale "Aggiungi a gara"
+        LST_Atleti.addMouseListener(new AtletiMouseHandler());
+
         aggiornaListaGare();
     }
 
@@ -81,32 +85,59 @@ public class FRM_Gara extends javax.swing.JFrame {
     }
 
     /**
-     * Ricarica LST_Atleti con gli atleti della gara selezionata,
-     * applicando il filtro combinato: TIPO (CMB_TipoGara) E SESSO (RBT_M/F).
+     * Ricarica LST_Atleti con:
+     *   1. Atleti LIBERI filtrati per tipo e sesso, con prefisso [LIBERO]
+     *   2. Atleti della gara selezionata (se c'è), filtrati per tipo e sesso
      *
-     * NOTA: questo filtro riguarda SOLO la visualizzazione,
-     * NON influisce su cosa viene inserito in FRM_Atleti.
+     * I filtri CMB_TipoGara e RBT_M/F agiscono su ENTRAMBE le sezioni.
+     * Popola anche indiceAtleti per mappare riga → oggetto Atleta.
      */
     private void aggiornaListaAtleti() {
         modelAtleti.clear();
+        indiceAtleti.clear();
+
+        String filtroTipo = (String) CMB_TipoGara.getSelectedItem();
+        boolean tuttiTipi = (filtroTipo == null || filtroTipo.isBlank()
+                             || filtroTipo.trim().equalsIgnoreCase("Tutti"));
+
+        // ── 1. Atleti LIBERI (filtrati per tipo e sesso) ──────────────────
+        for (Atleta a : AppData.getInstance().getAtletiLiberi()) {
+            if (!corrispondeSesso(a) || (!tuttiTipi && !corrispondeTipo(a, filtroTipo))) continue;
+            modelAtleti.addElement("[LIBERO] " + a.toString());
+            indiceAtleti.add(a);
+        }
+
+        // ── separatore visivo (solo se ci sono liberi e c'è anche una gara) ─
         Gara sel = garaSelezionata();
+        if (!indiceAtleti.isEmpty() && sel != null) {
+            modelAtleti.addElement("── atleti della gara ──────────────────");
+            indiceAtleti.add(null);   // segnaposto: non selezionabile
+        }
+
+        // ── 2. Atleti della gara selezionata (filtrati per tipo e sesso) ──
         if (sel == null) return;
 
-        // ── 1. filtro sesso ───────────────────────────────────────────────
         ArrayList<Atleta> dopoSesso;
         if (RBT_M.isSelected())      dopoSesso = sel.getAtletiM();
         else if (RBT_F.isSelected()) dopoSesso = sel.getAtletiF();
-        else                         dopoSesso = sel.getAtleti(); // nessun filtro sesso
-
-        // ── 2. filtro tipo (applicato dopo il filtro sesso) ───────────────
-        String filtroTipo = (String) CMB_TipoGara.getSelectedItem();
-        boolean tuttoTipo = (filtroTipo == null || filtroTipo.isBlank());
+        else                         dopoSesso = sel.getAtleti();
 
         for (Atleta a : dopoSesso) {
-            if (tuttoTipo || corrispondeTipo(a, filtroTipo)) {
+            if (tuttiTipi || corrispondeTipo(a, filtroTipo)) {
                 modelAtleti.addElement(a.toString());
+                indiceAtleti.add(a);
             }
         }
+    }
+
+    /**
+     * Controlla se l'atleta corrisponde al filtro sesso attivo.
+     * Se nessun radio è selezionato, tutti i sessi passano.
+     */
+    private boolean corrispondeSesso(Atleta a) {
+        if (RBT_M.isSelected()) return "M".equalsIgnoreCase(a.getSesso());
+        if (RBT_F.isSelected()) return "F".equalsIgnoreCase(a.getSesso());
+        return true;
     }
 
     /**
@@ -137,6 +168,20 @@ public class FRM_Gara extends javax.swing.JFrame {
         return indiceGare.get(idx);
     }
 
+    /** Ritorna l'Atleta corrispondente alla riga selezionata in LST_Atleti. */
+    private Atleta atleteSelezionato() {
+        int idx = LST_Atleti.getSelectedIndex();
+        if (idx < 0 || idx >= indiceAtleti.size()) return null;
+        return indiceAtleti.get(idx);
+    }
+
+    /** @return true se l'atleta selezionato è un atleta libero (non ancora in una gara). */
+    private boolean isAtletaLibero(Atleta a) {
+        return a != null && AppData.getInstance().getAtletiLiberi().contains(a);
+    }
+
+    // ── menu contestuale su LST_Gare ───────────────────────────────────────
+
     // ── menu contestuale su LST_Gare ───────────────────────────────────────
 
     /** Mostra il menu contestuale (tasto destro) su LST_Gare. */
@@ -159,6 +204,100 @@ public class FRM_Gara extends javax.swing.JFrame {
         }
 
         menu.show(LST_Gare, e.getX(), e.getY());
+    }
+
+    // ── menu contestuale su LST_Atleti ─────────────────────────────────────
+
+    /** Mostra menu contestuale su LST_Atleti (tasto destro). */
+    private void mostraMenuAtleta(java.awt.event.MouseEvent e) {
+        Atleta atleta = atleteSelezionato();
+        if (atleta == null) return;  // null = riga separatore o nessuna selezione
+
+        JPopupMenu menu = new JPopupMenu();
+
+        if (isAtletaLibero(atleta)) {
+            Gara garaTarget = garaSelezionata();
+            if (garaTarget != null) {
+                // controlla compatibilità preventiva per mostrare messaggio chiaro
+                String incompatibilita = verificaCompatibilita(atleta, garaTarget);
+
+                JMenuItem itemAggiungi = new JMenuItem("➕  Aggiungi a gara selezionata");
+                if (incompatibilita == null) {
+                    itemAggiungi.addActionListener(a -> aggiungiAtletaAGara(atleta));
+                } else {
+                    itemAggiungi.setEnabled(false);
+                    itemAggiungi.setToolTipText(incompatibilita);
+                }
+                menu.add(itemAggiungi);
+
+                if (incompatibilita != null) {
+                    JMenuItem itemInfo = new JMenuItem("⚠  " + incompatibilita);
+                    itemInfo.setEnabled(false);
+                    menu.add(itemInfo);
+                }
+            } else {
+                JMenuItem itemNessuna = new JMenuItem("⚠  Seleziona prima una gara in lista");
+                itemNessuna.setEnabled(false);
+                menu.add(itemNessuna);
+            }
+        }
+
+        if (menu.getComponentCount() > 0) {
+            menu.show(LST_Atleti, e.getX(), e.getY());
+        }
+    }
+
+    /**
+     * Verifica se l'atleta è compatibile con la gara.
+     * @return null se compatibile, stringa con il motivo altrimenti.
+     */
+    private String verificaCompatibilita(Atleta a, Gara gara) {
+        if (!a.getSesso().equalsIgnoreCase(gara.getCategoria()))
+            return "Sesso '" + a.getSesso() + "' ≠ categoria gara '" + gara.getCategoria() + "'";
+        if (gara.getTipoGaraCorsa()  != null && !(a instanceof Velocisti))
+            return "Gara di CORSA: richiede Velocista / Fondometrista / Ostacolista";
+        if (gara.getTipoGaraSalto()  != null && !(a instanceof Saltatori))
+            return "Gara di SALTO: richiede Saltatore";
+        if (gara.getTipoGaraLancio() != null && !(a instanceof Lanciatori))
+            return "Gara di LANCIO: richiede Pesista";
+        for (Atleta x : gara.getAtleti())
+            if (x.getPettorale().equals(a.getPettorale()))
+                return "Pettorale " + a.getPettorale() + " già usato in questa gara";
+        return null;
+    }
+
+    /**
+     * Aggiunge un atleta libero alla gara selezionata.
+     * Controlla compatibilità tipo/sesso, rimuove da atletiLiberi se successo.
+     */
+    private void aggiungiAtletaAGara(Atleta atleta) {
+        Gara gara = garaSelezionata();
+        if (gara == null || atleta == null) return;
+
+        boolean ok = gara.iscrizione(atleta);
+        if (ok) {
+            AppData.getInstance().rimuoviAtletaLibero(atleta);
+            JOptionPane.showMessageDialog(this,
+                    "✔  Atleta aggiunto alla gara con successo!\n" + atleta,
+                    "OK", JOptionPane.INFORMATION_MESSAGE);
+            aggiornaListaAtleti();
+            aggiornaListaGare();  // aggiorna conteggio partecipanti
+        } else {
+            String motivoTipo = "";
+            if (gara.getTipoGaraCorsa() != null && !(atleta instanceof Velocisti))
+                motivoTipo = "• Gara di CORSA: accetta solo Velocista / Fondometrista / Ostacolista\n";
+            else if (gara.getTipoGaraSalto() != null && !(atleta instanceof Saltatori))
+                motivoTipo = "• Gara di SALTO: accetta solo Saltatore\n";
+            else if (gara.getTipoGaraLancio() != null && !(atleta instanceof Lanciatori))
+                motivoTipo = "• Gara di LANCIO: accetta solo Pesista\n";
+
+            JOptionPane.showMessageDialog(this,
+                    "Impossibile aggiungere l'atleta.\n"
+                    + motivoTipo
+                    + "• Numero maglia " + atleta.getPettorale() + " già usato, oppure\n"
+                    + "• Sesso '" + atleta.getSesso() + "' ≠ categoria '" + gara.getCategoria() + "'",
+                    "Errore", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /** Apre un dialog per creare una nuova gara e la aggiunge al meeting. */
@@ -255,14 +394,9 @@ public class FRM_Gara extends javax.swing.JFrame {
      */
     private void avviaGara() {
         Gara sel = garaSelezionata();
-        if (sel == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Seleziona prima una gara dalla lista.\n"
-                    + "(Tasto destro su LST_Gare → \"Nuova Gara\" per crearne una)",
-                    "Nessuna gara selezionata", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+        // NON blocchiamo più se sel == null: permette di creare atleti liberi
         AppData.getInstance().setGaraCorrente(sel);
+
         FRM_Atleti formAtleti = new FRM_Atleti();
         formAtleti.setVisible(true);
         // quando FRM_Atleti si chiude, aggiorna le liste
@@ -335,8 +469,8 @@ public class FRM_Gara extends javax.swing.JFrame {
 
         // CMB_TipoGara: filtro tipo atleta (vuoto = tutti)
         CMB_TipoGara.setModel(new javax.swing.DefaultComboBoxModel<>(
-                new String[]{"Velocista", "Pesista ", "Saltatore", " "}));
-        CMB_TipoGara.setSelectedIndex(3); // default = " " = tutti i tipi
+                new String[]{"Tutti", "Velocista", "Fondometrista", "Ostacolista", "Saltatore", "Pesista"}));
+        CMB_TipoGara.setSelectedIndex(0); // default = "Tutti"
         CMB_TipoGara.setToolTipText("Filtra gli atleti per tipo (solo visualizzazione)");
         CMB_TipoGara.addActionListener(evt -> CMB_TipoGaraActionPerformed(evt));
 
@@ -453,6 +587,18 @@ public class FRM_Gara extends javax.swing.JFrame {
                 int idx = LST_Gare.locationToIndex(e.getPoint());
                 if (idx >= 0) LST_Gare.setSelectedIndex(idx);
                 mostraMenuGara(e);
+            }
+        }
+    }
+
+    /** Gestisce il tasto destro sulla lista atleti (per aggiungere atleti liberi). */
+    private class AtletiMouseHandler extends java.awt.event.MouseAdapter {
+        @Override
+        public void mousePressed(java.awt.event.MouseEvent e) {
+            if (SwingUtilities.isRightMouseButton(e)) {
+                int idx = LST_Atleti.locationToIndex(e.getPoint());
+                if (idx >= 0) LST_Atleti.setSelectedIndex(idx);
+                mostraMenuAtleta(e);
             }
         }
     }
