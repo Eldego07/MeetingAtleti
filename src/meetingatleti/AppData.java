@@ -25,7 +25,7 @@ public class AppData {
     private Map<Atleta, Prestazione> prestazioniInAttesa;
 
     private AppData() {
-        meeting              = new Meeting("Meeting di Atletica", "2026-03-15", "Stadio");
+        meeting              = new Meeting("Meeting di Atletica", "4C", "Stadio");
         atletiLiberi         = new ArrayList<>();
         prestazioniInAttesa  = new LinkedHashMap<>();
     }

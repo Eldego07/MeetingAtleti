@@ -56,15 +56,18 @@ public class VocePunteggio {
     /** Posizione in classifica (1 = primo, 2 = secondo, …). */
     public int      getPosizione()  { return posizione; }
 
-    /** Punteggio numerico calcolato da {@link Atleta#calcolaPunteggio()}. */
+    /** Punteggio numerico calcolato da {@link Atleta#calcolaPunteggio()}.
+     * @return  */
     public int      getPunteggio()  { return punteggio; }
 
-    /** Medaglia assegnata in base alla posizione. */
+    /** Medaglia assegnata in base alla posizione.
+     * @return  */
     public Medaglia getMedaglia()   { return medaglia; }
 
     /**
      * True se l'atleta ha esattamente lo stesso punteggio dell'atleta
      * che lo precede in classifica.
+     * @return 
      */
     public boolean isPariMerito()   { return pariMerito; }
 
@@ -73,6 +76,7 @@ public class VocePunteggio {
     /**
      * Restituisce la stringa della posizione con eventuale suffisso "=".
      * Es: "1", "2=", "2=".
+     * @return 
      */
     public String posizioneLabel() {
         return posizione + (pariMerito ? "=" : "");
@@ -81,6 +85,7 @@ public class VocePunteggio {
     /**
      * Restituisce l'etichetta completa con simbolo medaglia.
      * Es: "🥇 1", "🥈 2=".
+     * @return 
      */
     public String etichettaCompleta() {
         String sim = medaglia.getSimbolo();
