@@ -1,44 +1,51 @@
 package meetingatleti;
 
-import java.io.*;
-import java.util.*;
-
 /**
  * Atleta saltatore (lungo, alto, triplo, asta).
- * statisticaUnica nel form → distanzaSalto (in cm).
+ * Implementa ISaltatore.
+ *
+ * calcolaPunteggio() delega alla Prestazione della gara corrente,
+ * supportando il multi-disciplina con lo stesso numero di maglia.
+ *
+ * Formula (gestita da Prestazione): punteggio = distanzaSalto in cm.
  */
 public class Saltatori extends Atleta implements ISaltatore {
 
     public Saltatori() {}
 
     public Saltatori(String nome, String sesso, Integer eta, Integer pettorale) {
-        this.nome      = nome;
-        this.sesso     = sesso;
-        this.eta       = eta;
-        this.pettorale = pettorale;
+        super(nome, sesso, eta, pettorale);
     }
 
-    private Integer distanzaSalto; // distanza in cm
+    @Override
+    public int calcolaPunteggio() {
+        Gara garaCorrente = AppData.getInstance().getGaraCorrente();
+        return calcolaPunteggio(garaCorrente);
+    }
 
     @Override
-    public Integer getDistanzaSalto()             { return distanzaSalto; }
-    @Override
-    public void    setDistanzaSalto(Integer d)    { this.distanzaSalto = d; }
+    public Integer getDistanzaSalto() {
+        Gara g = AppData.getInstance().getGaraCorrente();
+        if (g == null) return null;
+        Prestazione p = getPrestazione(g);
+        return (p != null) ? p.getDistanzaSalto() : null;
+    }
 
-    /**
-     * Punteggio = distanzaSalto (cm).
-     * Distanza maggiore → punteggio più alto.
-     */
     @Override
-    public Integer calcolaPunteggio() {
-        if (distanzaSalto == null) return 0;
-        return distanzaSalto;
+    public void setDistanzaSalto(Integer distanza) {
+        Gara g = AppData.getInstance().getGaraCorrente();
+        if (g == null) return;
+        Prestazione p = getPrestazione(g);
+        if (p != null && p.getTipo() == Prestazione.Tipo.SALTO)
+            p.setDistanzaSalto(distanza);
     }
 
     @Override
     public String toString() {
+        Gara g = AppData.getInstance().getGaraCorrente();
+        Prestazione p = (g != null) ? getPrestazione(g) : null;
+        String stat = (p == null) ? "–" : p.getStatisticaLabel();
         return "[" + pettorale + "] " + nome + " | Saltatore"
-               + " | Distanza: " + distanzaSalto + " cm"
-               + " | Punteggio: " + calcolaPunteggio();
+               + " | " + stat + " | Punteggio: " + calcolaPunteggio();
     }
 }

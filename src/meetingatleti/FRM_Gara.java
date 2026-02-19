@@ -313,9 +313,18 @@ public class FRM_Gara extends javax.swing.JFrame {
         Gara gara = garaSelezionata();
         if (gara == null || atleta == null) return;
 
-        boolean ok = gara.iscrizione(atleta);
+        // Recupera la Prestazione in attesa salvata da FRM_Atleti
+        Prestazione prestazione = AppData.getInstance().getPrestazioneInAttesa(atleta);
+        if (prestazione == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Impossibile aggiungere l'atleta: nessuna prestazione associata.\n"
+                    + "Crea l'atleta nuovamente da FRM_Atleti con una gara attiva.",
+                    "Errore", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        boolean ok = gara.iscrizione(atleta, prestazione);
         if (ok) {
-            AppData.getInstance().rimuoviAtletaLibero(atleta);
+            AppData.getInstance().rimuoviAtletaLibero(atleta);  // rimuove anche prestazione in attesa
             JOptionPane.showMessageDialog(this,
                     "✔  Atleta aggiunto alla gara con successo!\n" + atleta,
                     "OK", JOptionPane.INFORMATION_MESSAGE);

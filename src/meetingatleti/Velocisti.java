@@ -1,121 +1,119 @@
 package meetingatleti;
 
-import java.io.*;
-import java.util.*;
-
 /**
  * Atleta corridore (velocista, fondometrista, ostacolista).
  * Implementa Fondometrista (tempoReazione) e Ostacolista (tempoOstacolo).
  *
- * ── Logica punteggio ──────────────────────────────────────────────────────
+ * calcolaPunteggio() è implementato delegando alla Prestazione associata
+ * alla gara corrente (AppData.getGaraCorrente()), in modo da supportare
+ * il multi-disciplina: lo stesso atleta può avere una Prestazione.velocista()
+ * per i 100m e una Prestazione.salto() per il salto in lungo.
  *
- *  VELOCISTA (centom, duecentom, quattrocentom):
- *    Dati: tempoGara (sec, es. 9.85) + tempoReazione (cs, es. 15)
- *    La partenza è a sparo: il tempo di reazione fa parte della prestazione.
- *    Tempo effettivo = tempoGara + tempoReazione / 100.0
- *    Punteggio = (int)(1000 / tempoEffettivo)
- *    → Un tempo reazione più basso migliorea il punteggio.
- *
- *  FONDOMETRISTA (800m, 1500m, …):
- *    Dati: tempoGara (sec, es. 210.5)
- *    Punteggio = (int)(100000 / tempoGara)
- *    → Scala più alta perché i tempi sono molto maggiori.
- *
- *  OSTACOLISTA:
- *    Dati: tempoGara (sec) + tempoOstacolo (cs di penalità per ogni ostacolo abbattuto)
- *    Tempo penalizzato = tempoGara + tempoOstacolo / 100.0
- *    Punteggio = (int)(1000 / tempoPenalizzato)
- *    → Più ostacoli abbattuti → punteggio più basso.
- *
- *  In FRM_Atleti: TXT_StatisticaUnica = tempoGara in secondi.
+ * Formule (gestite da Prestazione):
+ *   VELOCISTA     : 10000 / (tempoGara + tempoReazione/100)
+ *   OSTACOLISTA   : 10000 / (tempoGara + tempoOstacolo/100)
+ *   FONDOMETRISTA : 10000 / tempoGara
  */
 public class Velocisti extends Atleta implements Fondometrista, Ostacolista {
 
     public Velocisti() {}
 
     public Velocisti(String nome, String sesso, Integer eta, Integer pettorale) {
-        this.nome      = nome;
-        this.sesso     = sesso;
-        this.eta       = eta;
-        this.pettorale = pettorale;
+        super(nome, sesso, eta, pettorale);
     }
-
-    /** Tempo di gara in secondi (es. 9.85 per i 100m). */
-    private Double  tempoGara;
-
-    /** Tempo di reazione allo sparo in centesimi di secondo (es. 15 cs = 0.15 s).
-     *  Usato solo per i velocisti che partono a sparo. */
-    private Integer tempoReazione;
-
-    /** Penalità per ostacoli abbattuti, in centesimi di secondo.
-     *  Es. 3 ostacoli × 50 cs ciascuno = 150 cs di penalità. */
-    private Integer tempoOstacolo;
-
-    // ── getter / setter ───────────────────────────────────────────────────
-
-    public Double  getTempoGara()               { return tempoGara; }
-    public void    setTempoGara(Double t)        { this.tempoGara = t; }
-
-    @Override
-    public Integer getTempoReazione()            { return tempoReazione; }
-    @Override
-    public void    setTempoReazione(Integer t)   { this.tempoReazione = t; }
-
-    @Override
-    public Integer getTempoOstacolo()            { return tempoOstacolo; }
-    @Override
-    public void    setTempoOstacolo(Integer t)   { this.tempoOstacolo = t; }
-
-    // ── tipo corridore (determina la formula) ─────────────────────────────
-
-    public boolean isVelocista()      { return tempoReazione  != null && tempoReazione  > 0 && (tempoOstacolo == null || tempoOstacolo == 0); }
-    public boolean isOstacolista()    { return tempoOstacolo  != null && tempoOstacolo  > 0; }
-    public boolean isFondometrista()  { return !isVelocista() && !isOstacolista(); }
 
     // ── calcolaPunteggio ──────────────────────────────────────────────────
 
     /**
-     * Punteggio = 10000 / tempoEffettivo
-     *
-     * Formula unica per tutti i corridori: meno tempo = più punti, sempre.
-     * Il tempoEffettivo varia in base al tipo:
-     *
-     *   VELOCISTA:     tempoEffettivo = tempoGara + tempoReazione/100  (penalità reazione)
-     *   OSTACOLISTA:   tempoEffettivo = tempoGara + tempoOstacolo/100  (penalità ostacoli)
-     *   FONDOMETRISTA: tempoEffettivo = tempoGara                       (nessuna penalità)
-     *
-     * Esempi:
-     *   Velocista  52s  + 15cs reazione → 10000 / 52.15 ≈ 191 punti
-     *   Fondometrista 200s              → 10000 / 200   =  50 punti
-     *   → il più veloce vince sempre, indipendentemente dal tipo
+     * Delega il calcolo alla Prestazione della gara corrente.
+     * Il polimorfismo è garantito: questo metodo è l'implementazione concreta
+     * del metodo astratto dichiarato in Atleta.
      */
     @Override
-    public Integer calcolaPunteggio() {
-        if (tempoGara == null || tempoGara <= 0) return 0;
-
-        double penalita = 0.0;
-        if (isVelocista() && tempoReazione != null)
-            penalita = tempoReazione / 100.0;
-        else if (isOstacolista() && tempoOstacolo != null)
-            penalita = tempoOstacolo / 100.0;
-
-        double tempoEffettivo = tempoGara + penalita;
-        return (tempoEffettivo > 0) ? (int)(10000.0 / tempoEffettivo) : 0;
+    public int calcolaPunteggio() {
+        Gara garaCorrente = AppData.getInstance().getGaraCorrente();
+        return calcolaPunteggio(garaCorrente);   // metodo final di Atleta
     }
 
-    // ── toString ──────────────────────────────────────────────────────────
+    // ── Fondometrista ─────────────────────────────────────────────────────
+
+    /**
+     * Restituisce il tempo di reazione dalla Prestazione della gara corrente.
+     * Restituisce null se la gara corrente non ha una Prestazione di tipo VELOCISTA.
+     */
+    @Override
+    public Integer getTempoReazione() {
+        Gara g = AppData.getInstance().getGaraCorrente();
+        if (g == null) return null;
+        Prestazione p = getPrestazione(g);
+        return (p != null) ? p.getTempoReazione() : null;
+    }
+
+    @Override
+    public void setTempoReazione(Integer tempo) {
+        Gara g = AppData.getInstance().getGaraCorrente();
+        if (g == null) return;
+        Prestazione p = getPrestazione(g);
+        if (p != null && p.getTipo() == Prestazione.Tipo.VELOCISTA)
+            getPrestazione(g).setTempoReazione(tempo);
+    }
+
+    // ── Ostacolista ───────────────────────────────────────────────────────
+
+    @Override
+    public Integer getTempoOstacolo() {
+        Gara g = AppData.getInstance().getGaraCorrente();
+        if (g == null) return null;
+        Prestazione p = getPrestazione(g);
+        return (p != null) ? p.getTempoOstacolo() : null;
+    }
+
+    @Override
+    public void setTempoOstacolo(Integer tempo) {
+        Gara g = AppData.getInstance().getGaraCorrente();
+        if (g == null) return;
+        Prestazione p = getPrestazione(g);
+        if (p != null && p.getTipo() == Prestazione.Tipo.OSTACOLISTA)
+            p.setTempoOstacolo(tempo);
+    }
+
+    // ── helper tipo (basati sulla Prestazione della gara corrente) ────────
+
+    public boolean isVelocista() {
+        Gara g = AppData.getInstance().getGaraCorrente();
+        if (g == null) return false;
+        Prestazione p = getPrestazione(g);
+        return p != null && p.getTipo() == Prestazione.Tipo.VELOCISTA;
+    }
+
+    public boolean isOstacolista() {
+        Gara g = AppData.getInstance().getGaraCorrente();
+        if (g == null) return false;
+        Prestazione p = getPrestazione(g);
+        return p != null && p.getTipo() == Prestazione.Tipo.OSTACOLISTA;
+    }
+
+    public boolean isFondometrista() {
+        Gara g = AppData.getInstance().getGaraCorrente();
+        if (g == null) return false;
+        Prestazione p = getPrestazione(g);
+        return p != null && p.getTipo() == Prestazione.Tipo.FONDOMETRISTA;
+    }
+
+    public Double getTempoGara() {
+        Gara g = AppData.getInstance().getGaraCorrente();
+        if (g == null) return null;
+        Prestazione p = getPrestazione(g);
+        return (p != null) ? p.getTempoGara() : null;
+    }
 
     @Override
     public String toString() {
-        String tipo   = isOstacolista() ? "Ostacolista" : (isVelocista() ? "Velocista" : "Fondometrista");
-        String detail = "";
-        if (isOstacolista())
-            detail = " | Tempo: " + tempoGara + "s  Penalità: " + tempoOstacolo + "cs";
-        else if (isVelocista())
-            detail = " | Tempo: " + tempoGara + "s  Reaz: " + tempoReazione + "cs";
-        else
-            detail = " | Tempo: " + tempoGara + "s";
-        return "[" + pettorale + "] " + nome + " | " + tipo + detail
+        Gara g = AppData.getInstance().getGaraCorrente();
+        Prestazione p = (g != null) ? getPrestazione(g) : null;
+        String tipo   = (p == null) ? "Corridore" : p.getTipo().name();
+        String stat   = (p == null) ? "" : "  |  " + p.getStatisticaLabel();
+        return "[" + pettorale + "] " + nome + " | " + tipo + stat
                + " | Punteggio: " + calcolaPunteggio();
     }
 }

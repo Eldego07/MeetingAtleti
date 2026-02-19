@@ -1,18 +1,28 @@
 package meetingatleti;
 
-import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
 
 /**
  * Rappresenta una singola gara del meeting.
- * Contiene la lista degli atleti, calcola classifica e vincitore.
- * Implementa Maschile e Femminile per il filtraggio per sesso.
+ *
+ * v3 – supporto multi-disciplina:
+ * L'iscrizione accetta ora un oggetto Atleta e una Prestazione separati.
+ * La compatibilità viene verificata sul tipo della Prestazione (non sul tipo
+ * dell'atleta con instanceof). Lo stesso oggetto Atleta può quindi iscriversi
+ * a gare di tipo diverso con lo stesso numero di maglia.
+ *
+ * Controlli di iscrizione:
+ *   1. Atleta e prestazione non null
+ *   2. Pettorale non già presente IN QUESTA gara
+ *   3. Sesso compatibile con la categoria della gara
+ *   4. Tipo della prestazione compatibile con il tipo di gara
  */
 public class Gara implements Maschile, Femminile {
 
     public Gara() {
-        atleti            = new ArrayList<>();
-        atletiClassifica  = new ArrayList<>();
+        atleti           = new ArrayList<>();
+        atletiClassifica = new ArrayList<>();
+        classificaVoci   = new ArrayList<>();
     }
 
     public Gara(String nomeGara, String categoria) {
@@ -21,48 +31,35 @@ public class Gara implements Maschile, Femminile {
         this.categoria = categoria;
     }
 
-    // ── campi UML ──────────────────────────────────────────────────────────
-
     private String            nomeGara;
-    private String            categoria;       // "M" o "F"
-    private ArrayList<Atleta> atleti;          // iscritti
+    private String            categoria;
+    private ArrayList<Atleta> atleti;
     private ArrayList<Atleta> atletiClassifica;
+    private ArrayList<VocePunteggio> classificaVoci;
 
-    // uno solo di questi viene impostato in base al tipo di gara
     private TipoGaraSalto  tipoGaraSalto;
     private TipoGaraCorsa  tipoGaraCorsa;
     private TipoGaraLancio tipoGaraLancio;
 
-    // ── getter/setter ──────────────────────────────────────────────────────
+    public String  getNomeGara()                     { return nomeGara; }
+    public void    setNomeGara(String n)             { this.nomeGara = n; }
+    public String  getCategoria()                    { return categoria; }
+    public void    setCategoria(String c)            { this.categoria = c; }
+    public ArrayList<Atleta> getAtleti()             { return atleti; }
+    public TipoGaraSalto  getTipoGaraSalto()         { return tipoGaraSalto; }
+    public void setTipoGaraSalto(TipoGaraSalto t)    { tipoGaraSalto  = t; tipoGaraCorsa = null; tipoGaraLancio = null; }
+    public TipoGaraCorsa  getTipoGaraCorsa()         { return tipoGaraCorsa; }
+    public void setTipoGaraCorsa(TipoGaraCorsa t)    { tipoGaraCorsa  = t; tipoGaraSalto = null; tipoGaraLancio = null; }
+    public TipoGaraLancio getTipoGaraLancio()        { return tipoGaraLancio; }
+    public void setTipoGaraLancio(TipoGaraLancio t)  { tipoGaraLancio = t; tipoGaraSalto = null; tipoGaraCorsa = null; }
+    public int getNumeroPartecipanti()               { return atleti.size(); }
 
-    public String  getNomeGara()                    { return nomeGara; }
-    public void    setNomeGara(String n)            { this.nomeGara = n; }
-
-    public String  getCategoria()                   { return categoria; }
-    public void    setCategoria(String c)           { this.categoria = c; }
-
-    public ArrayList<Atleta> getAtleti()            { return atleti; }
-
-    public TipoGaraSalto  getTipoGaraSalto()        { return tipoGaraSalto; }
-    public void setTipoGaraSalto(TipoGaraSalto t)   { this.tipoGaraSalto  = t; tipoGaraCorsa = null; tipoGaraLancio = null; }
-
-    public TipoGaraCorsa  getTipoGaraCorsa()        { return tipoGaraCorsa; }
-    public void setTipoGaraCorsa(TipoGaraCorsa t)   { this.tipoGaraCorsa  = t; tipoGaraSalto = null; tipoGaraLancio = null; }
-
-    public TipoGaraLancio getTipoGaraLancio()       { return tipoGaraLancio; }
-    public void setTipoGaraLancio(TipoGaraLancio t) { this.tipoGaraLancio = t; tipoGaraSalto = null; tipoGaraCorsa = null; }
-
-    public int getNumeroPartecipanti()              { return atleti.size(); }
-
-    /** Ritorna una descrizione del tipo di gara. */
     public String getTipoDescrizione() {
         if (tipoGaraCorsa  != null) return tipoGaraCorsa.name();
         if (tipoGaraSalto  != null) return tipoGaraSalto.name();
         if (tipoGaraLancio != null) return tipoGaraLancio.name();
         return "N/A";
     }
-
-    // ── Maschile / Femminile ───────────────────────────────────────────────
 
     @Override
     public ArrayList<Atleta> getAtletiM() {
@@ -78,78 +75,108 @@ public class Gara implements Maschile, Femminile {
         return lista;
     }
 
-    // ── iscrizione ─────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════
+    //  ISCRIZIONE v3 – Atleta + Prestazione separati
+    // ══════════════════════════════════════════════════════════════════════
 
     /**
-     * Iscrive un atleta alla gara.
-     * Controlla:
-     *   1. Pettorale non duplicato
-     *   2. Sesso corrisponde alla categoria della gara
-     *   3. Tipo atleta compatibile con il tipo di gara:
-     *        Corsa  → solo Velocisti (implements Fondometrista e Ostacolista)
-     *        Salto  → solo Saltatori (implements ISaltatore)
-     *        Lancio → solo Lanciatori (implements ILanciatore)
+     * Iscrive un atleta alla gara con la prestazione fornita.
      *
-     * @return true se iscritto, false se uno dei controlli fallisce
+     * Un atleta con lo stesso pettorale può comparire in più gare dello stesso
+     * meeting (multi-disciplina): il controllo pettorale è locale a questa gara.
+     *
+     * @param atleta      l'atleta (non null)
+     * @param prestazione la prestazione per questa gara (non null)
+     * @return true se iscrizione avvenuta con successo
      */
-    public boolean iscrizione(Atleta a) {
-        if (a == null) return false;
+    public boolean iscrizione(Atleta atleta, Prestazione prestazione) {
+        if (atleta == null || prestazione == null) return false;
 
-        // 1. pettorale duplicato
+        // 1. pettorale già presente IN QUESTA gara
         for (Atleta x : atleti)
-            if (x.getPettorale().equals(a.getPettorale())) return false;
+            if (x.getPettorale().equals(atleta.getPettorale())) return false;
 
         // 2. sesso / categoria
-        if (!a.getSesso().equalsIgnoreCase(categoria)) return false;
+        if (!atleta.getSesso().equalsIgnoreCase(categoria)) return false;
 
-        // 3. tipo atleta compatibile con tipo gara
-        if (!tipoCompatibile(a)) return false;
+        // 3. tipo prestazione compatibile con tipo gara
+        if (!tipoCompatibile(prestazione)) return false;
 
-        atleti.add(a);
+        atleta.aggiungiPrestazione(this, prestazione);
+        atleti.add(atleta);
+        invalidaClassifica();
         return true;
     }
 
     /**
-     * Controlla che il tipo dell'atleta sia compatibile con il tipo della gara.
+     * Verifica la compatibilità tipo gara / tipo prestazione.
      *
-     *   tipoGaraCorsa  → Velocisti (che implementa Fondometrista e Ostacolista)
-     *   tipoGaraSalto  → Saltatori (che implementa ISaltatore)
-     *   tipoGaraLancio → Lanciatori (che implementa ILanciatore)
+     *  Gara Corsa  → VELOCISTA, FONDOMETRISTA, OSTACOLISTA
+     *  Gara Salto  → SALTO
+     *  Gara Lancio → LANCIO
+     *  (nessun tipo) → qualsiasi
      */
-    private boolean tipoCompatibile(Atleta a) {
-        if (tipoGaraCorsa  != null) return a instanceof Velocisti;
-        if (tipoGaraSalto  != null) return a instanceof Saltatori;
-        if (tipoGaraLancio != null) return a instanceof Lanciatori;
-        return true; // gara senza tipo: accetta tutti (caso base)
+    private boolean tipoCompatibile(Prestazione p) {
+        if (tipoGaraCorsa  != null) return p.compatibileCorsa();
+        if (tipoGaraSalto  != null) return p.compatibileSalto();
+        if (tipoGaraLancio != null) return p.compatibileLancio();
+        return true;
     }
 
-    // ── classifica ─────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════════
+    //  CLASSIFICA (via GestorePunteggio)
+    // ══════════════════════════════════════════════════════════════════════
 
     /**
-     * Ordina la lista e la salva in atletiClassifica.
-     * Ordine decrescente per punteggio; pari merito → pettorale più basso.
+     * Ricalcola la classifica.
+     * Imposta temporaneamente questa gara come garaCorrente in AppData
+     * in modo che Atleta.calcolaPunteggio() (senza argomenti) usi la
+     * prestazione corretta.
      */
     public void calcolaClassifica() {
-        atletiClassifica = new ArrayList<>(atleti);
-        atletiClassifica.sort((a1, a2) -> {
-            int cmp = Integer.compare(a2.calcolaPunteggio(), a1.calcolaPunteggio());
-            return (cmp != 0) ? cmp : Integer.compare(a1.getPettorale(), a2.getPettorale());
-        });
+        Gara precedente = AppData.getInstance().getGaraCorrente();
+        AppData.getInstance().setGaraCorrente(this);
+
+        classificaVoci   = GestorePunteggio.calcolaClassifica(this);
+        atletiClassifica = new ArrayList<>();
+        for (VocePunteggio v : classificaVoci)
+            atletiClassifica.add(v.getAtleta());
+
+        AppData.getInstance().setGaraCorrente(precedente);
     }
 
-    /** Restituisce la classifica (ricalcolando se necessario). */
     public ArrayList<Atleta> getClassifica() {
         if (atletiClassifica.isEmpty() && !atleti.isEmpty()) calcolaClassifica();
         return atletiClassifica;
     }
 
-    // ── vincitore ──────────────────────────────────────────────────────────
+    public ArrayList<VocePunteggio> getClassificaVoci() {
+        if (classificaVoci.isEmpty() && !atleti.isEmpty()) calcolaClassifica();
+        return classificaVoci;
+    }
 
-    /** @return l'atleta vincitore o null se nessuno iscritto. */
     public Atleta trovaVincitore() {
         if (atleti.isEmpty()) return null;
-        calcolaClassifica();
-        return atletiClassifica.get(0);
+        ArrayList<Atleta> cl = getClassifica();
+        return cl.isEmpty() ? null : cl.get(0);
+    }
+
+    public VocePunteggio trovaVincitoreVoce() {
+        ArrayList<VocePunteggio> cl = getClassificaVoci();
+        return cl.isEmpty() ? null : cl.get(0);
+    }
+
+    // ── statistiche ────────────────────────────────────────────────────────
+
+    public int    getPunteggioMassimo()              { return GestorePunteggio.punteggioMassimo(this); }
+    public int    getPunteggioMinimo()               { return GestorePunteggio.punteggioMinimo(this); }
+    public double getPunteggioMedio()                { return GestorePunteggio.punteggioMedio(this); }
+    public ArrayList<Atleta> getAtletiPariMerito()   { return GestorePunteggio.trovaPariMeritoPrimo(this); }
+    public String getRiepilogoStatistiche()           { return GestorePunteggio.riepilogoStatistiche(this); }
+
+    private void invalidaClassifica() {
+        atletiClassifica.clear();
+        classificaVoci.clear();
     }
 
     @Override

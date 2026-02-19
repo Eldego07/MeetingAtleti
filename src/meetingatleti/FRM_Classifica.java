@@ -7,9 +7,16 @@ import javax.swing.table.DefaultTableModel;
 /**
  * Form 2 di 3 – Classifica della gara corrente.
  *
- * Mostra posizione, pettorale, nome, statistica e punteggio
- * di tutti gli atleti iscritti alla gara selezionata in FRM_Gara,
- * ordinati per punteggio decrescente.
+ * Mostra posizione (con medaglia e flag parità), pettorale, nome, sesso,
+ * statistica specifica e punteggio di tutti gli atleti iscritti alla gara
+ * selezionata in FRM_Gara, ordinati per punteggio decrescente.
+ *
+ * <p><b>v2 – integrazione GestorePunteggio:</b><br>
+ * La classifica è ora prodotta da {@link GestorePunteggio#calcolaClassifica(Gara)}
+ * e visualizzata come lista di {@link VocePunteggio}, con supporto a:<br>
+ * – medaglie (colonna "Pos." mostra 🥇🥈🥉)<br>
+ * – flag parità (posizione suffissata con "=")<br>
+ * – pannello statistiche (max, min, media, pari merito)</p>
  *
  * Navigazione:
  *   BTN_Sinistra  →  torna a FRM_Atleti  (Form 1)
@@ -35,6 +42,7 @@ public class FRM_Classifica extends javax.swing.JFrame {
 
         if (gara == null) {
             LBL_TitoloGara.setText("Nessuna gara selezionata");
+            LBL_Statistiche.setText(" ");
             return;
         }
 
@@ -44,34 +52,55 @@ public class FRM_Classifica extends javax.swing.JFrame {
 
         if (gara.getAtleti().isEmpty()) {
             LBL_Vincitore.setText("Nessun atleta iscritto.");
+            LBL_Statistiche.setText(" ");
             return;
         }
 
-        gara.calcolaClassifica();
-        ArrayList<Atleta> classifica = gara.getClassifica();
+        // ── classifica arricchita via GestorePunteggio ────────────────────
+        ArrayList<VocePunteggio> classifica = GestorePunteggio.calcolaClassifica(gara);
 
-        // popola la tabella
+        // ── popola la tabella ─────────────────────────────────────────────
         DefaultTableModel model = (DefaultTableModel) TBL_Classifica.getModel();
-        model.setRowCount(0); // svuota
+        model.setRowCount(0);
 
-        for (int i = 0; i < classifica.size(); i++) {
-            Atleta a = classifica.get(i);
-            String statLabel = getStatisticaLabel(a);
+        for (VocePunteggio vp : classifica) {
+            Atleta a = vp.getAtleta();
             model.addRow(new Object[]{
-                i + 1,
+                vp.etichettaCompleta(),        // "🥇 1" / "🥈 2=" / "4"
                 a.getPettorale(),
                 a.getNome(),
                 a.getSesso(),
-                statLabel,
-                a.calcolaPunteggio()
+                getStatisticaLabel(a),
+                vp.getPunteggio()
             });
         }
 
-        // vincitore
-        Atleta v = gara.trovaVincitore();
-        LBL_Vincitore.setText("🏆  Vincitore:  " + v.getNome()
-                + "   (Pett. " + v.getPettorale() + ")   –   "
-                + v.calcolaPunteggio() + " punti");
+        // ── vincitore ─────────────────────────────────────────────────────
+        VocePunteggio v = classifica.get(0);
+        ArrayList<Atleta> pari = gara.getAtletiPariMerito();
+        if (!pari.isEmpty()) {
+            // pari merito al primo posto
+            StringBuilder sb = new StringBuilder("🏆  Ex-aequo:  ");
+            for (int i = 0; i < pari.size(); i++) {
+                if (i > 0) sb.append("  –  ");
+                sb.append(pari.get(i).getNome())
+                  .append(" (Pett. ").append(pari.get(i).getPettorale()).append(")");
+            }
+            sb.append("   ").append(v.getPunteggio()).append(" pt");
+            LBL_Vincitore.setText(sb.toString());
+        } else {
+            LBL_Vincitore.setText("🏆  Vincitore:  " + v.getAtleta().getNome()
+                    + "   (Pett. " + v.getAtleta().getPettorale() + ")   –   "
+                    + v.getPunteggio() + " punti");
+        }
+
+        // ── pannello statistiche ───────────────────────────────────────────
+        LBL_Statistiche.setText(String.format(
+            "<html><b>Max:</b> %d &nbsp;&nbsp; <b>Min:</b> %d &nbsp;&nbsp; <b>Media:</b> %.1f</html>",
+            gara.getPunteggioMassimo(),
+            gara.getPunteggioMinimo(),
+            gara.getPunteggioMedio()
+        ));
     }
 
     /** Restituisce la stringa della statistica specifica per tipo di atleta. */
@@ -82,7 +111,7 @@ public class FRM_Classifica extends javax.swing.JFrame {
                 return v.getTempoGara() + "s  pen:" + v.getTempoOstacolo() + "cs";
             if (v.isVelocista())
                 return v.getTempoGara() + "s  reaz:" + v.getTempoReazione() + "cs";
-            return v.getTempoGara() + "s";   // fondometrista
+            return v.getTempoGara() + "s";
         } else if (a instanceof Saltatori) {
             return ((Saltatori) a).getDistanzaSalto() + " cm";
         } else if (a instanceof Lanciatori) {
@@ -93,13 +122,11 @@ public class FRM_Classifica extends javax.swing.JFrame {
 
     // ── Navigazione ────────────────────────────────────────────────────────
 
-    /** ◀  Torna a FRM_Atleti (Form 1). */
     private void goSinistra() {
         new FRM_Atleti().setVisible(true);
         this.dispose();
     }
 
-    /** ▶  Va a FRM_ClassificaGenerale (Form 3). */
     private void goDestra() {
         new FRM_ClassificaGenerale().setVisible(true);
         this.dispose();
@@ -116,6 +143,7 @@ public class FRM_Classifica extends javax.swing.JFrame {
         jScrollPane1    = new javax.swing.JScrollPane();
         TBL_Classifica  = new javax.swing.JTable();
         LBL_Vincitore   = new javax.swing.JLabel();
+        LBL_Statistiche = new javax.swing.JLabel();
         BTN_Sinistra    = new javax.swing.JButton();
         BTN_Destra      = new javax.swing.JButton();
         LBL_Form        = new javax.swing.JLabel();
@@ -128,21 +156,21 @@ public class FRM_Classifica extends javax.swing.JFrame {
         LBL_TitoloGara.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         LBL_TitoloGara.setText("Classifica");
 
-        // ── tabella classifica ────────────────────────────────────────────
+        // ── tabella classifica (colonna "Pos." contiene medaglia + parità) ─
         TBL_Classifica.setModel(new DefaultTableModel(
                 new Object[][]{},
-                new String[]{"Pos", "Pett.", "Nome", "Sesso", "Statistica", "Punteggio"}
+                new String[]{"Pos.", "Pett.", "Nome", "Sesso", "Statistica", "Punteggio"}
         ) {
-            // rende le celle non editabili
             @Override public boolean isCellEditable(int r, int c) { return false; }
         });
         TBL_Classifica.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        TBL_Classifica.getColumnModel().getColumn(0).setPreferredWidth(35);
-        TBL_Classifica.getColumnModel().getColumn(1).setPreferredWidth(45);
-        TBL_Classifica.getColumnModel().getColumn(2).setPreferredWidth(160);
-        TBL_Classifica.getColumnModel().getColumn(3).setPreferredWidth(45);
-        TBL_Classifica.getColumnModel().getColumn(4).setPreferredWidth(90);
-        TBL_Classifica.getColumnModel().getColumn(5).setPreferredWidth(75);
+        TBL_Classifica.setRowHeight(22);
+        TBL_Classifica.getColumnModel().getColumn(0).setPreferredWidth(60);   // Pos.
+        TBL_Classifica.getColumnModel().getColumn(1).setPreferredWidth(45);   // Pett.
+        TBL_Classifica.getColumnModel().getColumn(2).setPreferredWidth(150);  // Nome
+        TBL_Classifica.getColumnModel().getColumn(3).setPreferredWidth(45);   // Sesso
+        TBL_Classifica.getColumnModel().getColumn(4).setPreferredWidth(90);   // Statistica
+        TBL_Classifica.getColumnModel().getColumn(5).setPreferredWidth(75);   // Punteggio
         jScrollPane1.setViewportView(TBL_Classifica);
 
         // ── vincitore ─────────────────────────────────────────────────────
@@ -150,6 +178,12 @@ public class FRM_Classifica extends javax.swing.JFrame {
         LBL_Vincitore.setForeground(new java.awt.Color(0, 120, 0));
         LBL_Vincitore.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         LBL_Vincitore.setText("🏆  Vincitore: –");
+
+        // ── statistiche (max / min / media) ───────────────────────────────
+        LBL_Statistiche.setFont(new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 11));
+        LBL_Statistiche.setForeground(new java.awt.Color(60, 60, 120));
+        LBL_Statistiche.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        LBL_Statistiche.setText(" ");
 
         // ── navigazione ───────────────────────────────────────────────────
         BTN_Sinistra.setText("<");
@@ -178,6 +212,8 @@ public class FRM_Classifica extends javax.swing.JFrame {
                             javax.swing.GroupLayout.DEFAULT_SIZE, 460, Short.MAX_VALUE)
                     .addComponent(LBL_Vincitore,
                             javax.swing.GroupLayout.DEFAULT_SIZE, 460, Short.MAX_VALUE)
+                    .addComponent(LBL_Statistiche,
+                            javax.swing.GroupLayout.DEFAULT_SIZE, 460, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(BTN_Sinistra)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED,
@@ -197,7 +233,9 @@ public class FRM_Classifica extends javax.swing.JFrame {
                 .addGap(10, 10, 10)
                 .addComponent(jScrollPane1,
                         javax.swing.GroupLayout.PREFERRED_SIZE, 300, Short.MAX_VALUE)
-                .addGap(10, 10, 10)
+                .addGap(6, 6, 6)
+                .addComponent(LBL_Statistiche)
+                .addGap(6, 6, 6)
                 .addComponent(LBL_Vincitore)
                 .addGap(12, 12, 12)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -208,16 +246,17 @@ public class FRM_Classifica extends javax.swing.JFrame {
         );
 
         pack();
-        setMinimumSize(new java.awt.Dimension(500, 460));
+        setMinimumSize(new java.awt.Dimension(500, 490));
         setLocationRelativeTo(null);
     }
 
     // ── variabili ─────────────────────────────────────────────────────────
-    private javax.swing.JButton    BTN_Destra;
-    private javax.swing.JButton    BTN_Sinistra;
-    private javax.swing.JLabel     LBL_Form;
-    private javax.swing.JLabel     LBL_TitoloGara;
-    private javax.swing.JLabel     LBL_Vincitore;
+    private javax.swing.JButton     BTN_Destra;
+    private javax.swing.JButton     BTN_Sinistra;
+    private javax.swing.JLabel      LBL_Form;
+    private javax.swing.JLabel      LBL_TitoloGara;
+    private javax.swing.JLabel      LBL_Vincitore;
+    private javax.swing.JLabel      LBL_Statistiche;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable     TBL_Classifica;
+    private javax.swing.JTable      TBL_Classifica;
 }
