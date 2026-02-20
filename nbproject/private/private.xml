@@ -3,10 +3,26 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Saltatori.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Ostacolista.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Medaglia.java</file>
             <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/FRM_Atleti.java</file>
-            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Salto.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Prestazione.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Velocisti.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Maschile.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/VocePunteggioMeeting.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/ILanciatore.java</file>
             <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/FRM_Classifica.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/ISaltatore.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/FRM_Gara.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Saltatori.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/MeetingAtleti.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/TipoGaraSalto.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Lancio.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/VocePunteggio.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Salto.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Corsa.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/Meeting.java</file>
+            <file>file:/C:/Users/samue/OneDrive/Desktop/MeetingAtleti/src/meetingatleti/AppData.java</file>
         </group>
     </open-files>
 </project-private>
